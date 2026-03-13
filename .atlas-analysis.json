@@ -1,0 +1,162 @@
+{
+  "projectType": "ai-ml",
+  "projectName": "AI Researcher Zero-to-SOTA",
+  "projectDescription": "A comprehensive 16-week curriculum for mastering AI engineering from foundational mathematics to research-grade implementations across LLMs, computer vision, RL, and multimodal systems.",
+  "theme": "palm",
+  "primaryColor": "#3B82F6",
+  "lightColor": "#60A5FA",
+  "darkColor": "#1E40AF",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "setup"
+            ]
+          },
+          {
+            "group": "Core Curriculum",
+            "pages": [
+              "curriculum/overview",
+              "curriculum/foundations",
+              "curriculum/advanced"
+            ]
+          },
+          {
+            "group": "Weekly Modules - Foundations",
+            "pages": [
+              "weeks/week01-math-optimization-autograd",
+              "weeks/week02-linear-algebra-probability",
+              "weeks/week03-tokenization-embeddings",
+              "weeks/week04-attention-mechanics",
+              "weeks/week05-transformer-architecture",
+              "weeks/week06-training-loops-objectives",
+              "weeks/week07-regularization-generalization",
+              "weeks/week08-scaling-laws-system-design"
+            ]
+          },
+          {
+            "group": "Weekly Modules - Advanced",
+            "pages": [
+              "weeks/week09-distributed-training-inference",
+              "weeks/week10-evaluation-benchmarks",
+              "weeks/week11-alignment-safety",
+              "weeks/week12-interpretability-mechanistic",
+              "weeks/week13-computer-vision-transformers",
+              "weeks/week14-reinforcement-learning-transformers",
+              "weeks/week15-multimodal-foundations",
+              "weeks/week16-research-capstone"
+            ]
+          },
+          {
+            "group": "Realm Deep-Dives",
+            "pages": [
+              "realms/overview",
+              "realms/llm-systems",
+              "realms/vision-transformers",
+              "realms/rl-sequence-models",
+              "realms/multimodal-alignment",
+              "realms/alignment-safety",
+              "realms/interpretability",
+              "realms/ml-systems-scaling"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Code Reference",
+        "groups": [
+          {
+            "group": "CLI Tools",
+            "pages": [
+              "api/cli/overview",
+              "api/cli/commands"
+            ]
+          },
+          {
+            "group": "Models",
+            "pages": [
+              "api/models/overview",
+              "api/models/pytorch-transformer",
+              "api/models/jax-transformer",
+              "api/models/tensorflow-transformer"
+            ]
+          },
+          {
+            "group": "Training",
+            "pages": [
+              "api/training/overview",
+              "api/training/pytorch-trainer"
+            ]
+          },
+          {
+            "group": "Evaluation",
+            "pages": [
+              "api/evaluation/metrics"
+            ]
+          },
+          {
+            "group": "Data & Utils",
+            "pages": [
+              "api/data/synthetic-text",
+              "api/utils/seeding",
+              "api/configs"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Resources",
+        "groups": [
+          {
+            "group": "Learning Resources",
+            "pages": [
+              "resources/references",
+              "resources/datasets",
+              "resources/papers"
+            ]
+          },
+          {
+            "group": "Engineering",
+            "pages": [
+              "resources/engineering-charter",
+              "resources/testing-strategy",
+              "resources/infrastructure"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "16-week structured curriculum from basics to research-grade AI",
+    "Zero-assumption math walkthroughs with step-by-step derivations",
+    "Weekly coding challenges with starter code, tests, and reference solutions",
+    "Multi-framework support (PyTorch, JAX, TensorFlow)",
+    "Realm deep-dives for LLMs, vision, RL, multimodal, alignment, and interpretability",
+    "Toy-safe defaults with explicit opt-in for large-scale training",
+    "CLI tools for running experiments, tests, and quality checks",
+    "Reference-backed learning tied to Stanford courses and seminal papers"
+  ],
+  "publicApiSurface": [
+    "ai-researcher prepare-data",
+    "ai-researcher train-toy",
+    "ai-researcher eval",
+    "ai-researcher run-checks",
+    "ai-researcher run-module-tests",
+    "ai-researcher export-diagrams",
+    "train_toy_language_model()",
+    "cross_entropy_for_target()",
+    "perplexity_from_average_loss()",
+    "TransformerPyTorch",
+    "TransformerJAX",
+    "TransformerTensorFlow",
+    "RepositoryConfig",
+    "load_repository_config()"
+  ]
+}
