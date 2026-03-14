@@ -1,0 +1,419 @@
+---
+title: "Research Papers"
+description: "Seminal papers, week-to-paper mapping, and reading strategies"
+---
+
+## Reading Research Papers Effectively
+
+Research papers are the foundation of cutting-edge AI development. Here's how to read them strategically:
+
+### Three-Pass Approach
+
+<Accordion title="First Pass: 5-10 minutes">
+  **Goal:** Understand what the paper is about
+  
+  **Read:**
+  - Title, abstract, introduction
+  - Section headings
+  - Conclusion
+  - Figures and captions
+  
+  **Decide:**
+  - Is this paper relevant to my current work?
+  - Should I read it in depth?
+  - What's the main contribution?
+</Accordion>
+
+<Accordion title="Second Pass: 1 hour">
+  **Goal:** Grasp the paper's content and methodology
+  
+  **Read:**
+  - Introduction and related work carefully
+  - Main sections, skipping detailed proofs
+  - Experimental setup and results
+  
+  **Take Notes:**
+  - Key ideas and techniques
+  - Novel contributions vs. incremental improvements
+  - Experimental design choices
+  
+  **Mark:**
+  - References to read next
+  - Unclear sections for deeper study
+</Accordion>
+
+<Accordion title="Third Pass: 3-5 hours">
+  **Goal:** Deeply understand and potentially reproduce
+  
+  **Do:**
+  - Read every section in detail
+  - Work through mathematical derivations
+  - Question every assumption
+  - Identify implicit details
+  
+  **Try:**
+  - Reproduce key experiments
+  - Implement core algorithms
+  - Extend or modify the approach
+</Accordion>
+
+### Active Reading Strategies
+
+<CardGroup cols={2}>
+  <Card title="Annotate as You Read">
+    - Highlight key claims
+    - Question assumptions in margins
+    - Note connections to other work
+    - Mark equations to derive yourself
+  </Card>
+  <Card title="Implement Core Ideas">
+    - Code up main algorithms
+    - Reproduce key figures
+    - Run on toy datasets
+    - Compare results to paper
+  </Card>
+  <Card title="Discuss with Others">
+    - Present to study group
+    - Explain key ideas out loud
+    - Debate methodology choices
+    - Share implementation notes
+  </Card>
+  <Card title="Connect to Practice">
+    - How does this apply to your work?
+    - What can you use immediately?
+    - What needs more research?
+    - What's missing from the paper?
+  </Card>
+</CardGroup>
+
+## Foundational Papers by Topic
+
+### Transformer Architecture
+
+<Accordion title="Attention Is All You Need (Vaswani et al., 2017)">
+  **Citation:** Vaswani, A., Shazeer, N., Parmar, N., et al. (2017). Attention is all you need. *NeurIPS*.
+  
+  **URL:** https://arxiv.org/abs/1706.03762
+  
+  **Core Contribution:**
+  - Introduced the transformer architecture
+  - Multi-head self-attention mechanism
+  - Positional encodings
+  - Eliminated recurrence and convolutions
+  
+  **Key Sections:**
+  - Section 3.2: Multi-head attention
+  - Section 3.5: Positional encoding
+  - Section 5: Training details and results
+  
+  **Implementation Notes:**
+  - Scaled dot-product attention: $\text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$
+  - Layer normalization applied before sublayers (Post-LN vs Pre-LN)
+  - Sinusoidal vs. learned positional embeddings
+  
+  **Week Alignment:** Weeks 4 (Attention Mechanics), 5 (Transformer Architecture)
+</Accordion>
+
+<Accordion title="BERT: Pre-training of Deep Bidirectional Transformers (Devlin et al., 2018)">
+  **Citation:** Devlin, J., Chang, M. W., Lee, K., & Toutanova, K. (2018). BERT: Pre-training of deep bidirectional transformers for language understanding. *arXiv preprint*.
+  
+  **URL:** https://arxiv.org/abs/1810.04805
+  
+  **Core Contribution:**
+  - Bidirectional pretraining with masked language modeling
+  - Next sentence prediction task
+  - Transfer learning via fine-tuning
+  
+  **Key Insights:**
+  - Masked tokens force bidirectional context
+  - Pre-training + fine-tuning paradigm
+  - Importance of large-scale pretraining data
+  
+  **Week Alignment:** Week 6 (Training Objectives)
+</Accordion>
+
+### Scaling and Training
+
+<Accordion title="Language Models are Few-Shot Learners (GPT-3) (Brown et al., 2020)">
+  **Citation:** Brown, T. B., Mann, B., Ryder, N., et al. (2020). Language models are few-shot learners. *NeurIPS*.
+  
+  **URL:** https://arxiv.org/abs/2005.14165
+  
+  **Core Contribution:**
+  - 175B parameter autoregressive language model
+  - In-context learning without gradient updates
+  - Scaling laws for model performance
+  
+  **Key Findings:**
+  - Performance improves log-linearly with scale
+  - Few-shot learning emerges at scale
+  - Task-agnostic pretraining enables task-specific prompting
+  
+  **Important Figures:**
+  - Figure 1.2: Scaling laws across model sizes
+  - Figure 3.1: In-context learning curves
+  
+  **Week Alignment:** Weeks 8 (Scaling Laws), 10 (Evaluation)
+</Accordion>
+
+<Accordion title="Training Compute-Optimal LLMs (Chinchilla) (Hoffmann et al., 2022)">
+  **Citation:** Hoffmann, J., Borgeaud, S., Mensch, A., et al. (2022). Training compute-optimal large language models. *arXiv preprint*.
+  
+  **URL:** https://arxiv.org/abs/2203.15556
+  
+  **Core Contribution:**
+  - Optimal scaling: model size and training tokens should scale equally
+  - Previous models were undertrained
+  - Chinchilla (70B) outperforms Gopher (280B) with same compute
+  
+  **Key Equations:**
+  - $N_{\text{optimal}} \propto C^{0.5}$ (model parameters)
+  - $D_{\text{optimal}} \propto C^{0.5}$ (training tokens)
+  
+  **Implications:**
+  - Rethinking compute allocation
+  - More data, smaller models for fixed compute
+  
+  **Week Alignment:** Week 8 (Scaling Laws)
+</Accordion>
+
+<Accordion title="Scaling Laws for Neural Language Models (Kaplan et al., 2020)">
+  **Citation:** Kaplan, J., McCandlish, S., Henighan, T., et al. (2020). Scaling laws for neural language models. *arXiv preprint*.
+  
+  **URL:** https://arxiv.org/abs/2001.08361
+  
+  **Core Contribution:**
+  - Power-law relationships for loss vs. model size, dataset size, compute
+  - Empirical scaling law coefficients
+  - Prediction of performance from resource allocation
+  
+  **Key Insights:**
+  - Loss scales as $L(N) \sim N^{-0.076}$ (model size)
+  - Loss scales as $L(D) \sim D^{-0.095}$ (dataset size)
+  - Compute-optimal model size grows with compute budget
+  
+  **Week Alignment:** Week 8 (Scaling Laws)
+</Accordion>
+
+### Alignment and Safety
+
+<Accordion title="Training language models to follow instructions (InstructGPT) (Ouyang et al., 2022)">
+  **Citation:** Ouyang, L., Wu, J., Jiang, X., et al. (2022). Training language models to follow instructions with human feedback. *NeurIPS*.
+  
+  **URL:** https://arxiv.org/abs/2203.02155
+  
+  **Core Contribution:**
+  - Reinforcement learning from human feedback (RLHF)
+  - Three-stage training: SFT → Reward modeling → PPO fine-tuning
+  - Improved helpfulness and reduced harmful outputs
+  
+  **Key Methodology:**
+  1. Supervised fine-tuning on demonstrations
+  2. Train reward model from human comparisons
+  3. Optimize policy with PPO against reward model
+  
+  **Week Alignment:** Week 11 (Alignment and Safety)
+</Accordion>
+
+<Accordion title="Constitutional AI: Harmlessness from AI Feedback (Bai et al., 2022)">
+  **Citation:** Bai, Y., Kadavath, S., Kundu, S., et al. (2022). Constitutional AI: Harmlessness from AI feedback. *arXiv preprint*.
+  
+  **URL:** https://arxiv.org/abs/2212.08073
+  
+  **Core Contribution:**
+  - Self-improvement via AI-generated critiques and revisions
+  - Reducing reliance on human feedback for harmlessness
+  - Constitution: set of principles guiding model behavior
+  
+  **Key Stages:**
+  1. Supervised stage: Model critiques and revises its own responses
+  2. RL stage: AI-generated preference labels for RLAIF
+  
+  **Week Alignment:** Week 11 (Alignment and Safety)
+</Accordion>
+
+### Interpretability
+
+<Accordion title="A Mathematical Framework for Transformer Circuits (Elhage et al., 2021)">
+  **Citation:** Elhage, N., Nanda, N., Olsson, C., et al. (2021). A mathematical framework for transformer circuits. *Transformer Circuits Thread*.
+  
+  **URL:** https://transformer-circuits.pub/2021/framework/index.html
+  
+  **Core Contribution:**
+  - Residual stream as central communication channel
+  - Attention heads as specialized circuits
+  - Layer-by-layer information flow analysis
+  
+  **Key Concepts:**
+  - QK and OV circuits
+  - Induction heads for in-context learning
+  - Compositional structure of attention patterns
+  
+  **Week Alignment:** Week 12 (Interpretability and Mechanistic Understanding)
+</Accordion>
+
+<Accordion title="In-context Learning and Induction Heads (Olsson et al., 2022)">
+  **Citation:** Olsson, C., Elhage, N., Nanda, N., et al. (2022). In-context learning and induction heads. *arXiv preprint*.
+  
+  **URL:** https://arxiv.org/abs/2209.11895
+  
+  **Core Contribution:**
+  - Induction heads emerge during training and enable in-context learning
+  - Phase change in loss coincides with induction head formation
+  - Mechanistic explanation for few-shot learning
+  
+  **Key Experiments:**
+  - Ablation studies showing induction heads are necessary
+  - Training dynamics showing sudden capability emergence
+  
+  **Week Alignment:** Week 12 (Interpretability)
+</Accordion>
+
+### Multimodal
+
+<Accordion title="An Image is Worth 16x16 Words (Vision Transformer) (Dosovitskiy et al., 2020)">
+  **Citation:** Dosovitskiy, A., Beyer, L., Kolesnikov, A., et al. (2020). An image is worth 16x16 words: Transformers for image recognition at scale. *ICLR*.
+  
+  **URL:** https://arxiv.org/abs/2010.11929
+  
+  **Core Contribution:**
+  - Pure transformer architecture for image classification
+  - Image patches as sequence tokens
+  - Competitive with CNNs when pretrained at scale
+  
+  **Key Design:**
+  - Patch embedding: split image into 16×16 patches
+  - Learnable position embeddings
+  - Classification token for image-level prediction
+  
+  **Week Alignment:** Week 13 (Computer Vision Transformers)
+</Accordion>
+
+<Accordion title="Learning Transferable Visual Models From Natural Language Supervision (CLIP) (Radford et al., 2021)">
+  **Citation:** Radford, A., Kim, J. W., Hallacy, C., et al. (2021). Learning transferable visual models from natural language supervision. *ICML*.
+  
+  **URL:** https://arxiv.org/abs/2103.00020
+  
+  **Core Contribution:**
+  - Contrastive learning on 400M image-text pairs
+  - Zero-shot transfer to downstream vision tasks
+  - Alignment between vision and language representations
+  
+  **Key Methodology:**
+  - Dual encoder: image encoder + text encoder
+  - Contrastive loss: maximize similarity of correct pairs
+  - Natural language as supervision signal
+  
+  **Week Alignment:** Week 15 (Multimodal Foundations)
+</Accordion>
+
+## Week-to-Paper Mapping
+
+### Weeks 1-2: Foundations
+No specific papers (Python, PyTorch fundamentals)
+
+### Week 3: Tokenization and Embeddings
+- Supporting: BERT (WordPiece), GPT-2 (BPE)
+- Reference: "Neural Machine Translation of Rare Words with Subword Units" (Sennrich et al., 2015)
+
+### Week 4: Attention Mechanics
+- **Primary:** Attention Is All You Need (Vaswani et al., 2017)
+- Supporting: "Effective Approaches to Attention-based NMT" (Luong et al., 2015)
+
+### Week 5: Transformer Architecture
+- **Primary:** Attention Is All You Need (Vaswani et al., 2017)
+- Supporting: "On Layer Normalization in the Transformer Architecture" (Xiong et al., 2020)
+
+### Week 6: Training Loops and Objectives
+- BERT (Devlin et al., 2018)
+- GPT-2 (Radford et al., 2019)
+
+### Week 7: Regularization and Optimization
+- "Dropout: A Simple Way to Prevent Neural Networks from Overfitting" (Srivastava et al., 2014)
+- "Adam: A Method for Stochastic Optimization" (Kingma & Ba, 2014)
+
+### Week 8: Scaling Laws and System Design
+- **Primary:** Scaling Laws for Neural Language Models (Kaplan et al., 2020)
+- **Primary:** Training Compute-Optimal LLMs / Chinchilla (Hoffmann et al., 2022)
+- Supporting: Language Models are Few-Shot Learners / GPT-3 (Brown et al., 2020)
+
+### Week 9: Distributed Training and Inference
+- "Megatron-LM: Training Multi-Billion Parameter Language Models" (Shoeybi et al., 2019)
+- "ZeRO: Memory Optimizations Toward Training Trillion Parameter Models" (Rajbhandari et al., 2020)
+
+### Week 10: Evaluation and Benchmarks
+- Language Models are Few-Shot Learners / GPT-3 (Brown et al., 2020)
+- "Beyond Accuracy: Behavioral Testing of NLP Models" (Ribeiro et al., 2020)
+
+### Week 11: Alignment and Safety
+- **Primary:** Training language models to follow instructions / InstructGPT (Ouyang et al., 2022)
+- **Primary:** Constitutional AI (Bai et al., 2022)
+- Supporting: "Deep Reinforcement Learning from Human Preferences" (Christiano et al., 2017)
+
+### Week 12: Interpretability and Mechanistic Understanding
+- **Primary:** A Mathematical Framework for Transformer Circuits (Elhage et al., 2021)
+- **Primary:** In-context Learning and Induction Heads (Olsson et al., 2022)
+
+### Week 13: Computer Vision Transformers
+- **Primary:** An Image is Worth 16x16 Words / ViT (Dosovitskiy et al., 2020)
+- Supporting: "Swin Transformer: Hierarchical Vision Transformer using Shifted Windows" (Liu et al., 2021)
+
+### Week 14: Audio and Speech Transformers
+- "Attention Is All You Need in Speech Separation" (Luo et al., 2019)
+- "Wav2Vec 2.0: A Framework for Self-Supervised Learning of Speech Representations" (Baevski et al., 2020)
+
+### Week 15: Multimodal Foundations
+- **Primary:** Learning Transferable Visual Models / CLIP (Radford et al., 2021)
+- Supporting: "Flamingo: a Visual Language Model for Few-Shot Learning" (Alayrac et al., 2022)
+
+### Week 16: Research Capstone
+- Self-selected papers based on research direction
+- Recent arXiv papers in chosen domain
+
+## Building a Paper Library
+
+<Note>
+**Recommended Tools:**
+- **Zotero:** Reference management and PDF annotation
+- **Notion/Obsidian:** Personal wiki for paper notes
+- **GitHub repo:** Code implementations alongside papers
+- **arXiv Sanity:** Curated feed of relevant papers
+</Note>
+
+### Organizing Your Reading
+
+1. **Priority Tiers:**
+   - Must-read: Foundational papers for current week
+   - Should-read: Supporting papers and extensions
+   - Nice-to-read: Adjacent topics and future directions
+
+2. **Note-Taking Template:**
+   - One-sentence summary
+   - Key contributions (3-5 bullets)
+   - Methodology overview
+   - Results and limitations
+   - Connections to other work
+   - Implementation notes
+
+3. **Implementation Tracking:**
+   - Code repositories implementing the paper
+   - Your own implementation attempts
+   - Differences between paper and code
+   - Reproduction results
+
+## Staying Current
+
+<CardGroup cols={2}>
+  <Card title="arXiv Daily">
+    Subscribe to cs.CL and cs.LG categories for daily papers
+  </Card>
+  <Card title="Conference Proceedings">
+    NeurIPS, ICML, ICLR, ACL, EMNLP - major AI/NLP venues
+  </Card>
+  <Card title="Research Blogs">
+    Lab blogs (Anthropic, OpenAI, DeepMind) for annotated releases
+  </Card>
+  <Card title="Twitter/X Academia">
+    Follow researchers for paper discussions and insights
+  </Card>
+</CardGroup>

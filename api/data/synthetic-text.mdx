@@ -1,0 +1,375 @@
+---
+title: "Synthetic Text Generation"
+description: "Build tiny character-level datasets for local-safe training experiments"
+---
+
+## Overview
+
+The `data.synthetic_text` module provides utilities for creating small, reproducible synthetic datasets ideal for rapid prototyping and testing transformer architectures locally without downloading large corpora.
+
+## Classes
+
+### ToyBatch
+
+Immutable dataclass representing a batch of training sequences.
+
+```python
+@dataclass(frozen=True)
+class ToyBatch:
+    input_tokens: list[list[int]]
+    target_tokens: list[list[int]]
+```
+
+<ParamField path="input_tokens" type="list[list[int]]">
+  Input sequences for the model. Shape: `[batch_size, sequence_length]`
+</ParamField>
+
+<ParamField path="target_tokens" type="list[list[int]]">
+  Target sequences (inputs shifted by 1). Shape: `[batch_size, sequence_length]`
+</ParamField>
+
+#### Example
+
+```python
+from ai_researcher_repo.data.synthetic_text import ToyBatch
+
+batch = ToyBatch(
+    input_tokens=[[1, 2, 3], [4, 5, 6]],
+    target_tokens=[[2, 3, 4], [5, 6, 7]]
+)
+
+print(f"Batch size: {len(batch.input_tokens)}")
+print(f"Sequence length: {len(batch.input_tokens[0])}")
+```
+
+---
+
+## Functions
+
+### build_character_vocabulary()
+
+Creates a character-to-token mapping from a text corpus.
+
+```python
+def build_character_vocabulary(corpus_text: str) -> dict[str, int]
+```
+
+<ParamField path="corpus_text" type="str" required>
+  Input text containing all characters to include in vocabulary
+</ParamField>
+
+<ResponseField name="vocabulary" type="dict[str, int]">
+  Mapping from characters to integer token IDs (sorted alphabetically)
+</ResponseField>
+
+#### Example
+
+```python
+from ai_researcher_repo.data.synthetic_text import build_character_vocabulary
+
+text = "hello world"
+vocab = build_character_vocabulary(text)
+
+print(vocab)
+# {' ': 0, 'd': 1, 'e': 2, 'h': 3, 'l': 4, 'o': 5, 'r': 6, 'w': 7}
+
+print(f"Vocabulary size: {len(vocab)}")  # 8 unique characters
+```
+
+---
+
+### encode_text()
+
+Converts text to a sequence of token IDs using a vocabulary.
+
+```python
+def encode_text(corpus_text: str, character_to_token_map: dict[str, int]) -> list[int]
+```
+
+<ParamField path="corpus_text" type="str" required>
+  Text to encode into tokens
+</ParamField>
+
+<ParamField path="character_to_token_map" type="dict[str, int]" required>
+  Vocabulary mapping from `build_character_vocabulary()`
+</ParamField>
+
+<ResponseField name="tokens" type="list[int]">
+  Sequence of integer token IDs
+</ResponseField>
+
+#### Example
+
+```python
+from ai_researcher_repo.data.synthetic_text import (
+    build_character_vocabulary,
+    encode_text
+)
+
+text = "hello"
+vocab = build_character_vocabulary(text)
+tokens = encode_text(text, vocab)
+
+print(tokens)  # [1, 2, 3, 3, 4] (actual IDs depend on vocab)
+
+# Decode back to verify
+reverse_vocab = {v: k for k, v in vocab.items()}
+decoded = ''.join(reverse_vocab[t] for t in tokens)
+print(decoded)  # "hello"
+```
+
+---
+
+### create_synthetic_corpus()
+
+Generates a deterministic synthetic text corpus by repeating a seed phrase.
+
+```python
+def create_synthetic_corpus(repeat_count: int) -> str
+```
+
+<ParamField path="repeat_count" type="int" required>
+  Number of times to repeat the seed text
+</ParamField>
+
+<ResponseField name="corpus" type="str">
+  Synthetic text corpus containing repeated educational phrase
+</ResponseField>
+
+#### Seed Text
+
+The function uses the phrase: `"attention enables context-aware token mixing. "`
+
+This phrase was chosen to:
+- Include diverse characters (letters, spaces, punctuation)
+- Describe a core transformer concept
+- Provide sufficient length for pattern learning
+
+#### Example
+
+```python
+from ai_researcher_repo.data.synthetic_text import create_synthetic_corpus
+
+# Small corpus for testing
+corpus = create_synthetic_corpus(repeat_count=3)
+print(corpus)
+# "attention enables context-aware token mixing. attention enables context-aware token mixing. attention enables context-aware token mixing. "
+
+print(f"Corpus length: {len(corpus)} characters")
+
+# Typical usage for training
+training_corpus = create_synthetic_corpus(repeat_count=256)
+print(f"Training corpus: {len(training_corpus)} characters")
+```
+
+---
+
+### build_toy_batches()
+
+Creates training batches from encoded token sequences with automatic input/target shifting.
+
+```python
+def build_toy_batches(
+    encoded_tokens: list[int],
+    sequence_length: int,
+    batch_size: int,
+) -> ToyBatch
+```
+
+<ParamField path="encoded_tokens" type="list[int]" required>
+  Encoded token sequence from `encode_text()`
+</ParamField>
+
+<ParamField path="sequence_length" type="int" required>
+  Length of each training sequence
+</ParamField>
+
+<ParamField path="batch_size" type="int" required>
+  Number of sequences in the batch
+</ParamField>
+
+<ResponseField name="batch" type="ToyBatch">
+  Batch with input_tokens and target_tokens (shifted by 1)
+</ResponseField>
+
+#### Validation
+
+Raises `ValueError` if the encoded token stream is too short:
+
+```python
+required_tokens = batch_size * (sequence_length + 1)
+if len(encoded_tokens) < required_tokens:
+    raise ValueError("Encoded token stream is too short...")
+```
+
+#### Target Construction
+
+The function automatically creates targets by shifting inputs by one position:
+
+```
+Input:  [t0, t1, t2, t3]
+Target: [t1, t2, t3, t4]
+```
+
+This enables next-token prediction training.
+
+#### Example
+
+```python
+from ai_researcher_repo.data.synthetic_text import (
+    create_synthetic_corpus,
+    build_character_vocabulary,
+    encode_text,
+    build_toy_batches
+)
+
+# Create full pipeline
+corpus = create_synthetic_corpus(repeat_count=256)
+vocab = build_character_vocabulary(corpus)
+tokens = encode_text(corpus, vocab)
+
+# Build a batch
+batch = build_toy_batches(
+    encoded_tokens=tokens,
+    sequence_length=64,
+    batch_size=8
+)
+
+print(f"Batch size: {len(batch.input_tokens)}")  # 8
+print(f"Sequence length: {len(batch.input_tokens[0])}")  # 64
+
+# Verify shifting relationship
+for i in range(len(batch.input_tokens)):
+    assert batch.input_tokens[i][1:] == batch.target_tokens[i][:-1]
+```
+
+#### Handling Insufficient Data
+
+```python
+# This will raise ValueError
+try:
+    batch = build_toy_batches(
+        encoded_tokens=[1, 2, 3],  # Only 3 tokens
+        sequence_length=64,
+        batch_size=8  # Needs 8 * 65 = 520 tokens
+    )
+except ValueError as e:
+    print(f"Error: {e}")
+    # "Encoded token stream is too short for requested batch configuration"
+```
+
+---
+
+## Complete Pipeline Example
+
+Here's how to create a synthetic dataset from start to finish:
+
+```python
+from ai_researcher_repo.data.synthetic_text import (
+    create_synthetic_corpus,
+    build_character_vocabulary,
+    encode_text,
+    build_toy_batches,
+    ToyBatch
+)
+
+def create_synthetic_dataset(
+    repeat_count: int = 256,
+    sequence_length: int = 64,
+    batch_size: int = 8
+) -> tuple[ToyBatch, dict[str, int], dict[int, str]]:
+    """Complete pipeline for synthetic data generation."""
+    
+    # Step 1: Generate synthetic corpus
+    corpus = create_synthetic_corpus(repeat_count)
+    print(f"Generated {len(corpus)} character corpus")
+    
+    # Step 2: Build vocabulary
+    vocab = build_character_vocabulary(corpus)
+    reverse_vocab = {v: k for k, v in vocab.items()}
+    print(f"Vocabulary size: {len(vocab)}")
+    
+    # Step 3: Encode to tokens
+    tokens = encode_text(corpus, vocab)
+    print(f"Encoded to {len(tokens)} tokens")
+    
+    # Step 4: Create batches
+    batch = build_toy_batches(tokens, sequence_length, batch_size)
+    print(f"Created batch: {batch_size} sequences of length {sequence_length}")
+    
+    return batch, vocab, reverse_vocab
+
+# Usage
+batch, vocab, reverse_vocab = create_synthetic_dataset()
+
+# Train your model
+for epoch in range(10):
+    # Get predictions from model
+    logits = model(batch.input_tokens)
+    
+    # Compute loss against targets
+    loss = compute_loss(logits, batch.target_tokens)
+    
+    # Backprop and update
+    loss.backward()
+    optimizer.step()
+```
+
+## Use Cases
+
+### 1. Fast Local Testing
+
+```python
+# Quick sanity check without downloading data
+corpus = create_synthetic_corpus(repeat_count=10)
+vocab = build_character_vocabulary(corpus)
+tokens = encode_text(corpus, vocab)
+batch = build_toy_batches(tokens, sequence_length=8, batch_size=2)
+
+# Verify model can overfit on tiny data
+for step in range(100):
+    loss = train_step(model, batch)
+    if step % 20 == 0:
+        print(f"Step {step}: Loss {loss:.3f}")
+```
+
+### 2. Debugging Transformer Components
+
+```python
+# Test attention mechanism with known patterns
+corpus = create_synthetic_corpus(repeat_count=5)
+vocab = build_character_vocabulary(corpus)
+tokens = encode_text(corpus, vocab)
+
+# Small batch to inspect attention patterns
+batch = build_toy_batches(tokens, sequence_length=16, batch_size=1)
+attention_weights = model.get_attention_weights(batch.input_tokens[0])
+visualize_attention(attention_weights)
+```
+
+### 3. Reproducible Experiments
+
+```python
+# Deterministic data for comparing architectures
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+
+set_global_random_seed(42)
+
+# Same data every time
+corpus = create_synthetic_corpus(repeat_count=256)
+batch = build_toy_batches(
+    encode_text(corpus, build_character_vocabulary(corpus)),
+    sequence_length=64,
+    batch_size=8
+)
+```
+
+<Info>
+  For production training, use real datasets like WikiText or OpenWebText. Synthetic data is designed for learning, debugging, and rapid iteration.
+</Info>
+
+## Source Location
+
+```
+src/ai_researcher_repo/data/synthetic_text.py
+```

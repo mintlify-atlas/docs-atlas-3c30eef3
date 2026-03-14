@@ -1,0 +1,223 @@
+---
+title: RL Sequence Models
+description: Model trajectories as sequences and connect RL to transformer pipelines
+---
+
+# Realm: RL Sequence Models
+
+Model trajectories as sequences and connect return estimation to transformer-friendly pipelines. Learn to apply transformer architectures to reinforcement learning problems.
+
+## Core Goal
+
+Understand how to represent reinforcement learning problems as sequence modeling tasks. You'll learn to use transformers for policy learning, value estimation, and decision-making in sequential environments.
+
+## Prerequisites
+
+Before starting this realm, complete:
+
+- **Weeks 1-8**: Foundational material through transformer architecture
+- **Week 14**: Reinforcement Learning with Transformers (provides direct context)
+- **Week 6**: Training loops and objectives (for policy gradient understanding)
+
+Recommended: Basic RL concepts (MDPs, rewards, returns, policies).
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="Decision Transformer Paper" href="https://arxiv.org/abs/2106.01345">
+    Reinforcement Learning via Supervised Learning
+  </Card>
+  
+  <Card title="OpenAI Research" href="https://openai.com/research/">
+    Latest RL research and techniques
+  </Card>
+  
+  <Card title="Stanford CS336" href="https://cs336.stanford.edu/">
+    Foundation for sequence modeling
+  </Card>
+  
+  <Card title="DeepMind Research" href="https://deepmind.google/research/">
+    Advanced RL methods and papers
+  </Card>
+</CardGroup>
+
+## Project Ladder
+
+Progress through three tiers of increasing complexity:
+
+### Short Project (1-2 days)
+
+**Goal**: Compute discounted returns and advantages on toy trajectories
+
+<Steps>
+  <Step title="Implement Returns Calculation">
+    Code discounted returns with gamma parameter. Test on hand-crafted trajectories.
+  </Step>
+  
+  <Step title="Add Advantage Estimation">
+    Implement GAE (Generalized Advantage Estimation). Verify against reference values.
+  </Step>
+  
+  <Step title="Create Trajectory Dataset">
+    Build dataclass for (state, action, reward, return) tuples. Add validation.
+  </Step>
+  
+  <Step title="Test Edge Cases">
+    Verify terminal states, episode boundaries, and numerical stability.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Return computation with tests
+- Advantage estimation implementation
+- Trajectory data structure
+- Comprehensive test suite
+
+### Medium Project (3-7 days)
+
+**Goal**: Build sequence dataset from episodes and train simple predictor
+
+<Steps>
+  <Step title="Generate Episodes">
+    Use simple environment (CartPole, MountainCar) or synthetic data. Collect diverse trajectories.
+  </Step>
+  
+  <Step title="Sequence Dataset">
+    Convert episodes to (state, action, return-to-go) sequences. Handle variable length.
+  </Step>
+  
+  <Step title="Train Transformer Predictor">
+    Build small transformer to predict actions from states and return-to-go. Use causal masking.
+  </Step>
+  
+  <Step title="Evaluate Offline">
+    Measure prediction accuracy on held-out episodes. Analyze failure modes.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Episode collection pipeline
+- Sequence dataset with dataloaders
+- Trained transformer predictor
+- Offline evaluation metrics
+
+### Deep Project (1-2 weeks)
+
+**Goal**: Evaluate decision-transformer-style behavior on small control tasks
+
+<Steps>
+  <Step title="Collect Diverse Dataset">
+    Gather episodes with varying performance levels. Include expert and suboptimal behavior.
+  </Step>
+  
+  <Step title="Train Decision Transformer">
+    Implement full architecture with state, action, and return embeddings. Use proper conditioning.
+  </Step>
+  
+  <Step title="Online Evaluation">
+    Deploy in environment. Condition on different target returns. Measure achieved performance.
+  </Step>
+  
+  <Step title="Compare to Baselines">
+    Train behavioral cloning and traditional RL (PPO/SAC). Compare sample efficiency and final performance.
+  </Step>
+  
+  <Step title="Analyze Return Conditioning">
+    Study how target return affects behavior. Plot performance vs. conditioning value.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Full decision transformer implementation
+- Multi-seed online evaluation results
+- Baseline comparisons
+- Return conditioning analysis
+- Technical report
+
+## Acceptance Criteria
+
+Your work meets professional standards if:
+
+<AccordionGroup>
+  <Accordion title="Correct Return/Advantage Math with Tests">
+    - Discounting formula implemented correctly
+    - Bootstrap values handled properly
+    - Edge cases (terminal states) tested
+    - Numerical stability verified
+    - Unit tests cover all code paths
+  </Accordion>
+  
+  <Accordion title="Clear Separation of Offline Dataset Prep and Model Training">
+    - Data collection code is independent
+    - Dataset format is documented
+    - Train/val/test splits are reproducible
+    - No data leakage between splits
+    - Preprocessing steps are explicit
+  </Accordion>
+  
+  <Accordion title="Evaluation Across Multiple Seeds">
+    - At least 3 random seeds tested
+    - Results reported with mean ± std
+    - Statistical tests applied where appropriate
+    - Variance sources documented
+  </Accordion>
+</AccordionGroup>
+
+## Key Concepts to Master
+
+- **Sequence Modeling for RL**: State-action-return representation, causal masking, autoregressive generation
+- **Return Conditioning**: How to specify desired performance, goal-directed behavior
+- **Dataset Quality**: Diversity requirements, distribution shift, offline RL challenges
+- **Architecture Choices**: Embedding strategies, position encoding for time steps, attention patterns
+- **Evaluation**: Offline metrics vs. online performance, generalization to unseen returns
+
+## Common Pitfalls
+
+<Warning>
+**Avoid these mistakes:**
+
+- Incorrect discount factor application
+- Ignoring episode boundaries in sequences
+- Training on expert-only data (limits diversity)
+- Not conditioning on return-to-go (just state-action)
+- Comparing offline vs. online metrics directly
+</Warning>
+
+## Implementation Tips
+
+<Accordion title="Return-to-Go Computation">
+Compute return-to-go as the sum of future rewards from current timestep. This is more stable than predicting total episode return. Update at each step: `rtg[t] = reward[t] + gamma * rtg[t+1]`.
+</Accordion>
+
+<Accordion title="Sequence Length">
+Start with fixed-length sequences (e.g., 20 steps). Pad shorter episodes and mask padding in attention. For variable length, use batch size 1 or dynamic batching.
+</Accordion>
+
+<Accordion title="Action Space">
+For discrete actions, use cross-entropy loss. For continuous actions, predict mean and std of Gaussian, or use deterministic prediction with MSE loss.
+</Accordion>
+
+## Integration with Other Realms
+
+RL Sequence Models knowledge enables:
+
+- **LLM Systems**: Applying transformers to sequential decision-making
+- **Alignment & Safety**: RLHF and preference learning
+- **Interpretability**: Understanding policy decisions
+- **ML Systems & Scaling**: Efficient RL training at scale
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Start Short Project" href="/quickstart">
+    Implement returns calculation
+  </Card>
+  
+  <Card title="Review Week 14" href="/weeks/week14-reinforcement-learning-transformers">
+    Refresh RL concepts
+  </Card>
+  
+  <Card title="Read Decision Transformer" href="https://arxiv.org/abs/2106.01345">
+    Study key architecture
+  </Card>
+</CardGroup>

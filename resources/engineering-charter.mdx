@@ -1,0 +1,507 @@
+---
+title: "Engineering Charter"
+description: "Code quality standards, naming conventions, and development principles"
+---
+
+## Overview
+
+The Engineering Charter defines the coding standards and principles that guide all development in the AI Researcher curriculum. These rules ensure code remains readable, maintainable, and pedagogically valuable.
+
+<Note>
+These are not suggestions—they are enforced through code review, linting, and type checking. Quality is non-negotiable in educational code.
+</Note>
+
+## Core Values
+
+The foundation of our engineering approach:
+
+<CardGroup cols={2}>
+  <Card title="Readability First">
+    Optimize for the reader, not the writer. Code is read 10x more than it's written.
+  </Card>
+  <Card title="Long-Term Thinking">
+    Prefer maintainability over short-term convenience. Code should age well.
+  </Card>
+  <Card title="Clarity Over Cleverness">
+    Explicit, obvious code beats clever, compact code. Future you will thank you.
+  </Card>
+  <Card title="Testability Built-In">
+    Small, pure functions are inherently testable. Design for testing from the start.
+  </Card>
+</CardGroup>
+
+### 1. Optimize for Readability and Long-Term Maintainability
+
+**Principle:** Code should be self-documenting and obvious to readers unfamiliar with the implementation.
+
+**Guidelines:**
+- Use descriptive names that communicate intent
+- Avoid abbreviations and jargon unless universally understood
+- Structure code to reveal its purpose at a glance
+- Comment the "why," not the "what"
+
+**Example:**
+```python
+# ❌ BAD: Unclear, abbreviated
+def calc(cfg, ctx):
+    tmp = cfg.lr * ctx.step
+    return tmp if tmp < cfg.max else cfg.max
+
+# ✅ GOOD: Clear, explicit
+def calculate_learning_rate(
+    base_learning_rate: float,
+    current_step: int,
+    max_learning_rate: float
+) -> float:
+    """Calculate learning rate with linear warmup and cap."""
+    warmed_learning_rate = base_learning_rate * current_step
+    return min(warmed_learning_rate, max_learning_rate)
+```
+
+### 2. Prefer Clear Code Over Overly Defensive Code
+
+**Principle:** Write code that's obvious and correct by design, not code that tries to handle every edge case defensively.
+
+**Guidelines:**
+- Use type hints to document expectations
+- Validate inputs at boundaries, not internally
+- Fail fast with clear error messages
+- Trust well-typed, well-tested internal functions
+
+**Example:**
+```python
+# ❌ BAD: Overly defensive
+def process_tokens(tokens):
+    if tokens is None:
+        tokens = []
+    if not isinstance(tokens, list):
+        tokens = list(tokens)
+    if len(tokens) == 0:
+        return None
+    # ... actual logic
+
+# ✅ GOOD: Clear contract, fail fast
+def process_tokens(tokens: list[int]) -> list[int]:
+    """Process token list. Expects non-empty list of token IDs."""
+    assert len(tokens) > 0, "Token list must not be empty"
+    # ... actual logic
+```
+
+### 3. Keep Functions Small, Single-Purpose, and Testable
+
+**Principle:** Each function should do one thing well. If you can't name it clearly, it's doing too much.
+
+**Guidelines:**
+- Functions should fit on one screen (~20-30 lines)
+- One level of abstraction per function
+- Extract helper functions liberally
+- Each function should be testable in isolation
+
+**Example:**
+```python
+# ❌ BAD: Does too many things
+def train_model(config):
+    # Load data
+    data = load_data(config.data_path)
+    tokenizer = build_tokenizer(config.vocab_size)
+    tokens = tokenizer.encode(data)
+    
+    # Build model
+    model = Transformer(config.model_params)
+    
+    # Train
+    optimizer = Adam(model.parameters(), lr=config.lr)
+    for epoch in range(config.epochs):
+        # ... training loop
+    
+    # Evaluate
+    # ... evaluation logic
+    
+    # Save
+    # ... saving logic
+
+# ✅ GOOD: Single-purpose, composable
+def prepare_training_data(
+    data_path: str,
+    vocab_size: int
+) -> list[int]:
+    """Load and tokenize training data."""
+    raw_data = load_data(data_path)
+    tokenizer = build_tokenizer(vocab_size)
+    return tokenizer.encode(raw_data)
+
+def build_model(model_config: ModelConfig) -> Transformer:
+    """Instantiate transformer model from config."""
+    return Transformer(
+        num_layers=model_config.num_layers,
+        hidden_dim=model_config.hidden_dim,
+        num_heads=model_config.num_heads
+    )
+
+def train_epoch(
+    model: Transformer,
+    data_loader: DataLoader,
+    optimizer: Optimizer
+) -> float:
+    """Train for one epoch, return average loss."""
+    # ... training logic
+```
+
+### 4. Use Explicit Full-Form Names
+
+**Principle:** Variable and function names should be self-explanatory without needing comments or context.
+
+**Guidelines:**
+- No abbreviations in public interfaces
+- Use domain terminology correctly
+- Include units and dimensions in names where relevant
+- Be consistent across the codebase
+
+**Example:**
+```python
+# ❌ BAD: Abbreviated, unclear
+def attn(q, k, v, m=None):
+    d = q.shape[-1]
+    s = (q @ k.T) / math.sqrt(d)
+    if m is not None:
+        s = s.masked_fill(m == 0, float('-inf'))
+    return softmax(s, dim=-1) @ v
+
+# ✅ GOOD: Explicit, clear
+def compute_attention(
+    query: Tensor,          # shape: [batch, seq_len, dim]
+    key: Tensor,            # shape: [batch, seq_len, dim]
+    value: Tensor,          # shape: [batch, seq_len, dim]
+    attention_mask: Tensor | None = None  # shape: [batch, seq_len, seq_len]
+) -> Tensor:
+    """Compute scaled dot-product attention.
+    
+    Returns:
+        Attention output with shape [batch, seq_len, dim]
+    """
+    embedding_dim = query.shape[-1]
+    attention_scores = (query @ key.transpose(-2, -1)) / math.sqrt(embedding_dim)
+    
+    if attention_mask is not None:
+        attention_scores = attention_scores.masked_fill(
+            attention_mask == 0,
+            float('-inf')
+        )
+    
+    attention_weights = softmax(attention_scores, dim=-1)
+    return attention_weights @ value
+```
+
+### 5. Prefer Pure Functions and Immutable Data Flow
+
+**Principle:** Functions should transform inputs to outputs without side effects. State changes should be explicit.
+
+**Guidelines:**
+- Default to pure functions that don't modify inputs
+- Return new values instead of mutating arguments
+- Make side effects obvious (I/O, randomness, global state)
+- Use typing to indicate mutability
+
+**Example:**
+```python
+# ❌ BAD: Hidden mutation
+def normalize_embeddings(embeddings):
+    """Normalize embeddings in-place."""
+    mean = embeddings.mean(dim=-1, keepdim=True)
+    std = embeddings.std(dim=-1, keepdim=True)
+    embeddings -= mean
+    embeddings /= std
+    # No return, caller's data silently modified
+
+# ✅ GOOD: Pure transformation
+def normalize_embeddings(embeddings: Tensor) -> Tensor:
+    """Return normalized embeddings (non-mutating)."""
+    mean = embeddings.mean(dim=-1, keepdim=True)
+    std = embeddings.std(dim=-1, keepdim=True)
+    return (embeddings - mean) / std
+```
+
+### 6. Isolate Side Effects at Orchestration Boundaries
+
+**Principle:** Keep I/O, randomness, and device allocation at the edges. Core logic should be pure.
+
+**Guidelines:**
+- File I/O only in data loading and checkpoint saving
+- Device placement in initialization, not mid-computation
+- Random seeds set at script entry, not in algorithms
+- Environment access in config loading only
+
+**Example:**
+```python
+# ❌ BAD: Side effects scattered throughout
+def train_step(model, batch):
+    # Hidden device movement
+    batch = {k: v.to('cuda') for k, v in batch.items()}
+    
+    # File I/O in the middle of training
+    log_file = open('training.log', 'a')
+    log_file.write(f"Processing batch...\n")
+    
+    output = model(batch['input'])
+    loss = compute_loss(output, batch['target'])
+    
+    # More I/O
+    log_file.write(f"Loss: {loss.item()}\n")
+    log_file.close()
+    
+    return loss
+
+# ✅ GOOD: Side effects at boundaries
+def compute_training_loss(
+    model: nn.Module,
+    input_ids: Tensor,
+    target_ids: Tensor
+) -> Tensor:
+    """Pure computation: input tensors → loss tensor."""
+    output = model(input_ids)
+    return compute_loss(output, target_ids)
+
+def train_step(
+    model: nn.Module,
+    batch: dict[str, Tensor],
+    logger: Logger
+) -> float:
+    """Orchestrate one training step with explicit side effects."""
+    # Side effect: compute (but input already on device)
+    loss = compute_training_loss(
+        model,
+        batch['input_ids'],
+        batch['target_ids']
+    )
+    
+    # Side effect: logging
+    logger.log({"batch_loss": loss.item()})
+    
+    return loss.item()
+```
+
+## Naming Rules
+
+### What NOT to Use
+
+<Warning>
+**Banned Abbreviations in Public Interfaces:**
+- `cfg` → use `config`
+- `ctx` → use `context`
+- `tmp` → use descriptive name
+- `arr` → use `array` or be specific (`token_ids`)
+- `idx` → use `index`
+- `dim` → use `dimension` or `embedding_dim`
+- `seq` → use `sequence`
+- `attn` → use `attention`
+</Warning>
+
+### Parameter Name Standards
+
+**Communicate shape, unit, and semantics:**
+
+```python
+# ✅ GOOD: Shape and meaning clear
+def layer_norm(
+    input_tensor: Tensor,        # shape: [batch, seq_len, embed_dim]
+    normalized_shape: int,       # typically embed_dim
+    epsilon: float = 1e-5        # numerical stability constant
+) -> Tensor:
+    ...
+
+# ✅ GOOD: Units and semantics explicit
+def schedule_learning_rate(
+    base_learning_rate: float,      # e.g., 1e-4
+    warmup_steps: int,              # number of steps
+    current_step: int,              # 0-indexed step counter
+    decay_factor: float = 0.95      # multiplicative decay
+) -> float:
+    ...
+```
+
+## Functional Programming Guidelines
+
+### Pure Transformation Functions
+
+**Default pattern:**
+```python
+def transform_data(input_data: InputType) -> OutputType:
+    """Pure transformation with no side effects."""
+    # 1. Validate inputs (assertions OK)
+    assert input_data.shape[0] > 0
+    
+    # 2. Transform
+    intermediate = process_step_1(input_data)
+    output = process_step_2(intermediate)
+    
+    # 3. Return new value
+    return output
+```
+
+### Composition Over Hidden State
+
+```python
+# ❌ BAD: Hidden shared state
+class DataProcessor:
+    def __init__(self):
+        self._cache = {}
+    
+    def process(self, data):
+        # Mutates hidden cache
+        key = hash(data)
+        if key not in self._cache:
+            self._cache[key] = expensive_operation(data)
+        return self._cache[key]
+
+# ✅ GOOD: Explicit composition
+def process_with_cache(
+    data: Data,
+    cache: dict[int, Result]
+) -> tuple[Result, dict[int, Result]]:
+    """Process data with explicit cache threading."""
+    key = hash(data)
+    if key in cache:
+        return cache[key], cache
+    
+    result = expensive_operation(data)
+    updated_cache = {**cache, key: result}
+    return result, updated_cache
+```
+
+### Explicit State Transitions
+
+```python
+# ✅ GOOD: State transitions return new values
+from dataclasses import dataclass, replace
+
+@dataclass(frozen=True)  # Immutable
+class TrainingState:
+    model: nn.Module
+    optimizer: Optimizer
+    step: int
+    loss_history: list[float]
+
+def training_step(state: TrainingState, batch: Batch) -> TrainingState:
+    """Execute one training step, return new state."""
+    loss = compute_loss(state.model, batch)
+    loss.backward()
+    state.optimizer.step()
+    state.optimizer.zero_grad()
+    
+    # Return new state with updated values
+    return replace(
+        state,
+        step=state.step + 1,
+        loss_history=[*state.loss_history, loss.item()]
+    )
+```
+
+## Testing Rules
+
+### Every Code Unit Must Have Unit Tests
+
+<Note>
+**Coverage requirement:** Every public function, class, and module must have corresponding unit tests.
+</Note>
+
+```python
+# src/attention.py
+def compute_attention(
+    query: Tensor,
+    key: Tensor,
+    value: Tensor
+) -> Tensor:
+    """Compute scaled dot-product attention."""
+    # ... implementation
+
+# tests/test_attention.py
+import pytest
+import torch
+from src.attention import compute_attention
+
+@pytest.mark.unit
+def test_attention_output_shape():
+    """Attention output should match query shape."""
+    batch_size, seq_len, dim = 2, 10, 64
+    query = torch.randn(batch_size, seq_len, dim)
+    key = torch.randn(batch_size, seq_len, dim)
+    value = torch.randn(batch_size, seq_len, dim)
+    
+    output = compute_attention(query, key, value)
+    assert output.shape == (batch_size, seq_len, dim)
+
+@pytest.mark.unit
+def test_attention_is_weighted_sum():
+    """Attention output should be in convex hull of values."""
+    # ... property test
+```
+
+### Integration Tests on Tiny Deterministic Workloads
+
+```python
+@pytest.mark.integration
+def test_full_training_loop_converges():
+    """Training loop should reduce loss on tiny dataset."""
+    # Use tiny, deterministic data
+    torch.manual_seed(42)
+    tiny_dataset = create_synthetic_dataset(num_samples=10)
+    
+    model = TinyTransformer(vocab_size=100, embed_dim=32, num_layers=2)
+    initial_loss = evaluate(model, tiny_dataset)
+    
+    # Train for a few steps
+    train_for_steps(model, tiny_dataset, num_steps=10)
+    
+    final_loss = evaluate(model, tiny_dataset)
+    assert final_loss < initial_loss, "Model should learn on tiny dataset"
+```
+
+### Tests Never Launch Full-Scale Training
+
+<Warning>
+**Safety rules:**
+- Max dataset size in tests: 1000 samples
+- Max model size in tests: less than 1M parameters
+- Max training steps in tests: 100 steps
+- Use `@pytest.mark.slow` for anything >10 seconds
+</Warning>
+
+## Enforcement
+
+These standards are enforced via:
+
+1. **Ruff linting:** Catches style violations
+2. **Mypy type checking:** Enforces type hints
+3. **Pytest:** Requires test coverage
+4. **Code review:** Human verification of principles
+5. **CI/CD:** Automated checks on every commit
+
+```bash
+# Run all quality checks
+make run-checks
+
+# Individual checks
+ruff check src/ tests/      # Linting
+mypy src/                   # Type checking  
+pytest -m "unit or pedagogy or safety"  # Fast tests
+```
+
+## Summary
+
+<CardGroup cols={1}>
+  <Card title="Readability">
+    Code is read 10x more than written. Optimize for the reader.
+  </Card>
+  <Card title="Explicitness">
+    Full names, clear types, obvious flow. No hidden behavior.
+  </Card>
+  <Card title="Purity">
+    Pure functions by default. Side effects at boundaries only.
+  </Card>
+  <Card title="Testability">
+    Small, single-purpose functions. Every unit tested.
+  </Card>
+  <Card title="Simplicity">
+    Simple, obvious code beats clever, compact code every time.
+  </Card>
+</CardGroup>

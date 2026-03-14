@@ -1,0 +1,269 @@
+---
+title: "Week 12: Interpretability and Mechanistic Analysis"
+description: "Identify which components contribute most to a model decision signal"
+---
+
+## Module Focus
+
+Identify which components contribute most to a model decision signal through mechanistic analysis of neural network internals.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Understand Attribution">
+    Learn how to compute contribution scores for individual neurons
+  </Step>
+  
+  <Step title="Master the Formula">
+    Derive `contribution_i = activation_i * downstream_weight_i`
+  </Step>
+  
+  <Step title="Build Analysis Tools">
+    Implement top-k contributor identification in 30-45 minutes
+  </Step>
+</Steps>
+
+## Core Concept: Contribution Scores
+
+Mechanistic analysis tracks which internal parts carry the strongest causal signal:
+
+```
+contribution_i = activation_i * downstream_weight_i
+```
+
+This measures the **signed impact** each neuron has on the output.
+
+### Symbol Glossary
+
+- **activation_i**: The activation value of neuron i
+- **downstream_weight_i**: The weight connecting neuron i to the output
+- **contribution_i**: The signed impact score (positive or negative)
+- **top_k**: Number of dominant contributors to inspect
+
+### Why This Matters
+
+<Note>
+  Understanding which neurons contribute most to specific predictions helps us:
+  - Debug unexpected model behaviors
+  - Discover learned features and circuits
+  - Identify potential biases or failure modes
+  - Build mechanistic hypotheses about how models work
+</Note>
+
+## How Mechanistic Analysis Works
+
+<Steps>
+  <Step title="Compute Contribution Scores">
+    Multiply each neuron's activation by its downstream weight:
+    ```python
+    contribution = activation * weight
+    ```
+  </Step>
+  
+  <Step title="Sort by Magnitude">
+    Rank neurons by absolute contribution (ignoring sign):
+    ```python
+    sorted(contributions, key=abs, reverse=True)
+    ```
+  </Step>
+  
+  <Step title="Inspect Top Contributors">
+    Examine the top-k neurons to form mechanistic hypotheses about what features they detect
+  </Step>
+</Steps>
+
+<Accordion title="Intuition: Why Multiply Activation and Weight?">
+  Think of a simple linear model: `output = w1*a1 + w2*a2 + w3*a3`
+  
+  - If neuron 2 has `a2 = 10` and `w2 = 0.5`, it contributes `+5` to the output
+  - If neuron 3 has `a3 = 2` and `w3 = -3`, it contributes `-6` to the output
+  
+  Even though neuron 2 is more active, neuron 3 has a larger impact (in the negative direction) because its weight is stronger.
+  
+  By sorting by **absolute value**, we find the most influential neurons regardless of whether they increase or decrease the output.
+</Accordion>
+
+## Coding Challenge: Top Contributing Neurons
+
+**Duration**: 30-45 minutes
+
+### Problem Statement
+
+Implement `top_contributing_neurons` to identify and rank neurons by their absolute contribution.
+
+### Starter Code
+
+Location: `week12_interpretability_mechanistic/problem.py`
+
+```python
+from __future__ import annotations
+
+
+def top_contributing_neurons(
+    neuron_contributions: dict[str, float],
+    top_k: int,
+) -> list[tuple[str, float]]:
+    # Return top_k neuron entries sorted by absolute contribution descending.
+    raise NotImplementedError("Implement top_contributing_neurons")
+```
+
+### Requirements
+
+- Accept a dictionary mapping neuron names to contribution scores
+- Sort by **absolute value** of contribution (descending)
+- Return the top-k neurons as (name, score) tuples
+- Preserve the original signed values in the output
+
+### Example Implementation
+
+<Accordion title="Reference Solution">
+  ```python
+  def top_contributing_neurons(
+      neuron_contributions: dict[str, float],
+      top_k: int,
+  ) -> list[tuple[str, float]]:
+      ranked = sorted(
+          neuron_contributions.items(),
+          key=lambda item: abs(item[1]),
+          reverse=True,
+      )
+      return ranked[:top_k]
+  ```
+  
+  **Key insights:**
+  - Use `.items()` to get (key, value) pairs from dictionary
+  - Lambda function `lambda item: abs(item[1])` extracts absolute value for sorting
+  - `reverse=True` gives descending order (largest magnitude first)
+  - Slice `[:top_k]` to get only the top contributors
+</Accordion>
+
+### Toy Example
+
+```python
+contributions = {
+    'neuron_a': 0.2,
+    'neuron_b': 0.8,
+    'neuron_c': -0.1,
+    'neuron_d': -0.5,
+    'neuron_e': 0.05
+}
+
+top_3 = top_contributing_neurons(contributions, top_k=3)
+
+# Expected output:
+# [
+#   ('neuron_b', 0.8),   # |0.8| = 0.8 (largest)
+#   ('neuron_d', -0.5),  # |-0.5| = 0.5 (second)
+#   ('neuron_a', 0.2)    # |0.2| = 0.2 (third)
+# ]
+```
+
+<Warning>
+  **Common Mistake**: Sorting by raw value instead of absolute value will give you the most positive contributions, missing important negative contributors!
+</Warning>
+
+## Validation
+
+<CodeGroup>
+```bash Reference Tests
+pytest tests/test_problem_solution.py
+```
+
+```bash Exercise Tests
+# Unskip tests first, then run:
+pytest tests/test_problem_exercise.py
+```
+</CodeGroup>
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="Anthropic Research" href="https://www.anthropic.com/research">
+    Pioneering work on interpretability and feature visualization
+  </Card>
+  
+  <Card title="Transformer Circuits" href="https://transformer-circuits.pub/">
+    In-depth mechanistic interpretability research on transformers
+  </Card>
+</CardGroup>
+
+## Advanced Topics
+
+<Accordion title="From Attribution to Circuits">
+  Once you identify top contributing neurons:
+  
+  1. **Activation Analysis**: What inputs activate these neurons most?
+  2. **Feature Visualization**: What patterns do they detect?
+  3. **Circuit Discovery**: How do multiple neurons interact?
+  4. **Causal Interventions**: What happens when you ablate them?
+  
+  This bottom-up approach helps build a mechanistic understanding of neural networks.
+</Accordion>
+
+<Accordion title="Limitations of Simple Attribution">
+  **Linear approximation**: Contribution scores assume linear effects, but neural networks are highly nonlinear.
+  
+  **Interaction effects**: Two neurons might only matter together (e.g., AND/OR gates).
+  
+  **Context dependence**: A neuron's importance may vary across different inputs.
+  
+  More sophisticated methods include:
+  - Integrated gradients
+  - Shapley values  
+  - Attention visualization
+  - Causal mediation analysis
+</Accordion>
+
+## Suggested Weekly Workflow
+
+<Steps>
+  <Step title="Study the Math">
+    Read `math_walkthrough.md` and understand why multiplication captures impact
+  </Step>
+  
+  <Step title="Run Toy Example">
+    Execute `toy_example.py` and verify which neurons rank highest
+  </Step>
+  
+  <Step title="Implement Solution">
+    Complete `problem.py` with proper absolute value sorting
+  </Step>
+  
+  <Step title="Test Your Code">
+    Unskip exercise tests and ensure edge cases pass
+  </Step>
+  
+  <Step title="Compare and Reflect">
+    Review `solution.py` and think: how would you extend this to multi-layer networks?
+  </Step>
+</Steps>
+
+## Real-World Applications
+
+- **Model debugging**: Find neurons causing unexpected predictions
+- **Feature discovery**: Identify what concepts models learn
+- **Safety analysis**: Detect neurons encoding harmful behaviors
+- **Model editing**: Selectively modify high-impact neurons
+- **Circuit discovery**: Map computational pathways in transformers
+
+## Connection to Research
+
+<Note>
+  Recent interpretability work has discovered:
+  - **Induction heads** in transformers (copying patterns)
+  - **Polysemantic neurons** (encoding multiple unrelated concepts)
+  - **Superposition** (models representing more features than neurons)
+  - **Sparse autoencoders** for disentangling features
+</Note>
+
+## Prerequisites
+
+Before starting this week, understand:
+- Week 11: Alignment and Safety Objectives
+- Linear algebra (dot products, matrix multiplication)
+- Basic neural network architectures
+
+## Next Steps
+
+After completing this week, proceed to:
+- **Week 13**: Computer Vision Transformers - Apply transformers to images

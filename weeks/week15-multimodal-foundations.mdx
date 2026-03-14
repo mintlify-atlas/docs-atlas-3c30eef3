@@ -1,0 +1,353 @@
+---
+title: "Week 15: Multimodal Representation Learning"
+description: "Use cosine similarity and contrastive objectives for text-image alignment intuition"
+---
+
+## Module Focus
+
+Use cosine similarity and contrastive objectives to align representations from different modalities (text and images).
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Master Cosine Similarity">
+    Implement and understand normalized dot-product similarity
+  </Step>
+  
+  <Step title="Derive InfoNCE Loss">
+    Learn the contrastive objective: `L = -log(exp(sim_pos / tau) / sum_j exp(sim_j / tau))`
+  </Step>
+  
+  <Step title="Build Contrastive Learning">
+    Implement CLIP-style contrastive loss in 45-60 minutes
+  </Step>
+</Steps>
+
+## Core Concept: Contrastive Learning
+
+Contrastive learning rewards aligned pairs and penalizes mismatched pairs:
+
+```
+L = -log(exp(sim_pos / tau) / sum_j exp(sim_j / tau))
+```
+
+This is the **InfoNCE loss**, used by CLIP, ALIGN, and other multimodal models.
+
+### Symbol Glossary
+
+- **sim_pos**: Similarity between matched modalities (e.g., image and its caption)
+- **sim_j**: Similarities with candidate negatives (other images/captions)
+- **tau** (τ): Temperature controlling sharpness of distribution
+- **L**: Contrastive loss (lower is better)
+
+### Why Contrastive Learning?
+
+<Note>
+  Traditional supervised learning requires labeled data for every task.
+  
+  Contrastive learning uses **naturally paired data** (image-caption pairs from the web) to learn general-purpose representations that transfer to many downstream tasks without task-specific labels.
+</Note>
+
+## Foundation: Cosine Similarity
+
+Before computing contrastive loss, we need a similarity metric:
+
+```
+cosine_sim(a, b) = (a · b) / (||a|| * ||b||)
+```
+
+<Accordion title="Why Cosine Instead of Euclidean Distance?">
+  **Cosine similarity**:
+  - Ranges from -1 (opposite) to +1 (identical)
+  - Invariant to vector magnitude (normalization)
+  - Captures **direction** in embedding space
+  - Works well for high-dimensional embeddings
+  
+  **Euclidean distance**:
+  - Sensitive to magnitude
+  - Unbounded range
+  - Can be dominated by a few large dimensions
+  
+  For learned embeddings, we care about **direction** (semantic similarity) more than magnitude.
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Compute Similarity Scores">
+    Calculate cosine similarity between anchor and all candidates:
+    ```python
+    sim_pos = cosine_similarity(anchor, positive)
+    sim_neg_i = cosine_similarity(anchor, negative_i)
+    ```
+  </Step>
+  
+  <Step title="Scale by Temperature">
+    Divide by temperature and exponentiate:
+    ```python
+    exp_pos = exp(sim_pos / tau)
+    exp_neg_sum = sum(exp(sim_neg_i / tau))
+    ```
+  </Step>
+  
+  <Step title="Compute Negative Log Probability">
+    Take negative log of the positive pair's probability:
+    ```python
+    loss = -log(exp_pos / (exp_pos + exp_neg_sum))
+    ```
+  </Step>
+</Steps>
+
+## Coding Challenge: InfoNCE Contrastive Loss
+
+**Duration**: 45-60 minutes
+
+### Problem Statement
+
+Implement cosine similarity and InfoNCE-style loss for one anchor-positive pair with multiple negatives.
+
+### Starter Code
+
+Location: `week15_multimodal_foundations/problem.py`
+
+```python
+from __future__ import annotations
+
+import math
+
+
+def cosine_similarity(vector_a: list[float], vector_b: list[float]) -> float:
+    # Return cosine similarity between vectors.
+    raise NotImplementedError("Implement cosine_similarity")
+
+
+def info_nce_loss(
+    anchor_vector: list[float],
+    positive_vector: list[float],
+    negative_vectors: list[list[float]],
+    temperature: float,
+) -> float:
+    # Return InfoNCE loss for one anchor-positive set.
+    raise NotImplementedError("Implement info_nce_loss")
+```
+
+### Requirements
+
+- Implement cosine similarity with proper normalization
+- Compute InfoNCE loss using temperature scaling
+- Handle numerical stability (avoid overflow in exp)
+- Work with arbitrary embedding dimensions
+
+### Example Implementation
+
+<Accordion title="Reference Solution">
+  ```python
+  import math
+
+  def cosine_similarity(vector_a: list[float], vector_b: list[float]) -> float:
+      numerator = sum(value_a * value_b for value_a, value_b in zip(vector_a, vector_b))
+      norm_a = math.sqrt(sum(value * value for value in vector_a))
+      norm_b = math.sqrt(sum(value * value for value in vector_b))
+      return numerator / (norm_a * norm_b)
+
+  def info_nce_loss(
+      anchor_vector: list[float],
+      positive_vector: list[float],
+      negative_vectors: list[list[float]],
+      temperature: float,
+  ) -> float:
+      positive_score = math.exp(
+          cosine_similarity(anchor_vector, positive_vector) / temperature
+      )
+      negative_score_sum = sum(
+          math.exp(cosine_similarity(anchor_vector, negative_vector) / temperature)
+          for negative_vector in negative_vectors
+      )
+      return -math.log(positive_score / (positive_score + negative_score_sum))
+  ```
+  
+  **Key insights:**
+  - Cosine similarity is normalized dot product
+  - Temperature scales logits before softmax
+  - Loss is negative log-likelihood of correct pair
+  - Higher positive similarity → lower loss
+</Accordion>
+
+### Toy Example
+
+```python
+anchor   = [1.0, 2.0]
+positive = [2.0, 1.0]  # Similar direction
+negatives = [
+    [-1.0, -2.0],  # Opposite direction
+    [0.0, 1.0]     # Orthogonal-ish
+]
+temperature = 0.1
+
+# Cosine similarities:
+# sim(anchor, positive) ≈ 0.8 (high, good!)
+# sim(anchor, neg[0]) ≈ -0.8 (opposite)
+# sim(anchor, neg[1]) ≈ 0.4 (medium)
+
+# After temperature scaling and exp:
+# Positive pair gets high probability
+# Loss is low
+```
+
+<Warning>
+  **Numerical Stability**: For very large similarity values or small temperatures, `exp(sim/tau)` can overflow. In production code, use log-sum-exp trick:
+  
+  ```python
+  # Subtract max for stability
+  logits = [sim_i / tau for all i]
+  max_logit = max(logits)
+  log_sum = max_logit + log(sum(exp(l - max_logit) for l in logits))
+  ```
+</Warning>
+
+## Validation
+
+<CodeGroup>
+```bash Reference Tests
+pytest tests/test_problem_solution.py
+```
+
+```bash Exercise Tests
+# Unskip tests first, then run:
+pytest tests/test_problem_exercise.py
+```
+</CodeGroup>
+
+## Reference Materials
+
+<CardGroup cols={3}>
+  <Card title="Google DeepMind Research" href="https://deepmind.google/research/">
+    Contrastive learning research and applications
+  </Card>
+  
+  <Card title="TensorFlow Transformer Tutorial" href="https://www.tensorflow.org/text/tutorials/transformer">
+    Practical transformer implementations
+  </Card>
+  
+  <Card title="Meta AI Blog" href="https://ai.meta.com/blog/">
+    DINOv2, ImageBind, and other multimodal work
+  </Card>
+</CardGroup>
+
+## The Role of Temperature
+
+<Accordion title="Temperature Scaling Effects">
+  **Low temperature (τ = 0.01)**:
+  - Sharpens distribution (near one-hot)
+  - Model must be very confident
+  - Stronger gradients
+  - Risk of early collapse
+  
+  **High temperature (τ = 1.0)**:
+  - Softer distribution
+  - More forgiving to imperfect matches
+  - Weaker gradients
+  - Slower learning
+  
+  **Typical range**: 0.07 (CLIP) to 0.1 (most contrastive models)
+  
+  Temperature is often **learned** as a parameter during training.
+</Accordion>
+
+## How CLIP Uses This
+
+<Accordion title="CLIP Training Procedure">
+  **Batch**: N image-text pairs from the internet
+  
+  **Encode**: 
+  - Image encoder: images → embeddings
+  - Text encoder: captions → embeddings
+  
+  **Contrastive matrix**: Compute N×N similarity matrix
+  ```
+  sim[i,j] = cosine_similarity(image_i, text_j)
+  ```
+  
+  **Loss**: Sum of two contrastive losses:
+  - Image-to-text: For each image, predict its caption among N options
+  - Text-to-image: For each caption, predict its image among N options
+  
+  **Result**: Aligned embedding space where images and their captions are close
+  
+  **Zero-shot transfer**: At test time, compute similarity between test image and text prompts like "a photo of a [class]" to classify without task-specific training!
+</Accordion>
+
+## Suggested Weekly Workflow
+
+<Steps>
+  <Step title="Study the Math">
+    Read `math_walkthrough.md` and understand the softmax formulation
+  </Step>
+  
+  <Step title="Run Toy Example">
+    Execute `toy_example.py` and observe how loss changes with similarity
+  </Step>
+  
+  <Step title="Implement Solution">
+    Complete both `cosine_similarity` and `info_nce_loss`
+  </Step>
+  
+  <Step title="Test Your Code">
+    Unskip exercise tests and validate edge cases
+  </Step>
+  
+  <Step title="Compare and Reflect">
+    Review `solution.py` and experiment: what if you used L2 distance instead?
+  </Step>
+</Steps>
+
+## Real-World Applications
+
+- **CLIP**: Text-image retrieval and zero-shot classification
+- **ALIGN**: Large-scale vision-language pretraining
+- **ImageBind**: Binding 6+ modalities (image, text, audio, depth, thermal, IMU)
+- **LLaVA**: Multimodal instruction following
+- **Flamingo**: Few-shot visual question answering
+
+## Extensions and Variants
+
+<Note>
+  **Hard negative mining**: Sample more difficult negatives to improve learning
+  
+  **Multi-positive pairs**: Some samples have multiple valid captions
+  
+  **Asymmetric loss**: Different encoders may need different loss weights
+  
+  **Momentum encoders**: Use EMA of encoder for more stable negatives (MoCo)
+  
+  **Clustered contrastive**: Group similar samples to avoid false negatives
+</Note>
+
+## Connection to Self-Supervised Learning
+
+<Accordion title="Contrastive Learning Family">
+  **SimCLR**: Image augmentations create positive pairs
+  
+  **MoCo**: Momentum encoder + queue for large negative set
+  
+  **BYOL**: Bootstrap your own latent (no explicit negatives!)
+  
+  **SwAV**: Cluster-based contrastive learning
+  
+  **DINO**: Self-distillation with no labels
+  
+  All share the core idea: **pull together similar examples, push apart different ones**.
+</Accordion>
+
+## Prerequisites
+
+Before starting this week, understand:
+- Week 14: Reinforcement Learning with Transformers
+- Week 13: Computer Vision Transformers
+- Linear algebra (dot products, norms)
+- Basic probability (softmax, cross-entropy)
+
+## Next Steps
+
+After completing this week, proceed to:
+- **Week 16**: Research Capstone and Experiment Design - Synthesize everything into research methodology

@@ -1,0 +1,204 @@
+---
+title: "Week 08: Scaling Laws and System Design"
+description: "Model empirical loss scaling with token count and estimate power-law exponents"
+---
+
+## Module Focus
+
+Model empirical loss scaling with token count and estimate power-law exponents.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Explain and derive the core formula">
+    Understand `loss(N) = a * N^(-b)` and power-law scaling in plain language.
+  </Step>
+  <Step title="Translate formula to code">
+    Convert log-space linear regression to readable Python.
+  </Step>
+  <Step title="Solve the coding challenge">
+    Estimate power-law exponents in 45-60 minutes.
+  </Step>
+</Steps>
+
+## Core Formula
+
+```
+loss(N) = a * N^(-b)
+```
+
+Where:
+- `N` is the number of training tokens (or model parameters)
+- `a` is a scale constant
+- `b` is the scaling exponent (typically 0.3 - 0.5 for LLMs)
+
+## Mathematical Intuition
+
+Many model quality curves become nearly linear in log-log space, revealing power-law relationships.
+
+<Accordion title="Symbol Glossary">
+  - **N**: token count or compute budget
+  - **a**: scale constant (determines initial loss)
+  - **b**: scaling exponent (how fast loss decreases)
+  - **loss**: measured model error (cross-entropy, perplexity, etc.)
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Take logarithms">
+    ```
+    log(loss) = log(a) - b * log(N)
+    ```
+    This transforms the power law into a linear relationship.
+  </Step>
+  <Step title="Fit straight line">
+    Use linear regression in log space to find slope and intercept.
+  </Step>
+  <Step title="Extract exponent">
+    The scaling exponent `b` is the negative of the slope.
+  </Step>
+</Steps>
+
+## Why Power Laws?
+
+Scaling laws reveal fundamental properties of neural networks:
+
+- **Predictable performance** - estimate final model quality early in training
+- **Resource allocation** - decide between model size, data, and compute
+- **Extrapolation** - predict performance at scales not yet trained
+- **Chinchilla insights** - optimal model size for a given compute budget
+
+## Toy Example Walkthrough
+
+1. Use `N = [1, 4, 16]` and `loss = [8, 4, 2]`
+2. This sequence halves every 4x scale increase
+3. Log-space slope is `-1.0`, so exponent `b ≈ 0.5`
+4. Estimated power law: `loss(N) = 8 * N^(-0.5)`
+
+### Implementation
+
+```python
+from __future__ import annotations
+import math
+
+def run_toy_example() -> dict[str, float]:
+    token_counts = [1.0, 4.0, 16.0]
+    loss_values = [8.0, 4.0, 2.0]
+    log_tokens = [math.log(value) for value in token_counts]
+    log_losses = [math.log(value) for value in loss_values]
+    mean_log_tokens = sum(log_tokens) / len(log_tokens)
+    mean_log_losses = sum(log_losses) / len(log_losses)
+    numerator = sum(
+        (x_value - mean_log_tokens) * (y_value - mean_log_losses)
+        for x_value, y_value in zip(log_tokens, log_losses)
+    )
+    denominator = sum((x_value - mean_log_tokens) ** 2 for x_value in log_tokens)
+    slope = numerator / denominator
+    return {
+        "primary_metric": -slope,
+        "secondary_metric": math.exp(mean_log_losses),
+    }
+```
+
+## Coding Challenge
+
+<Card title="Estimate Power-Law Exponent">
+  **Goal**: Implement `estimate_power_law_exponent` using log-space linear regression.
+  
+  **Time**: 45-60 minutes
+  
+  **Requirements**:
+  - Transform token counts and losses to log space
+  - Compute mean-centered covariance and variance
+  - Calculate slope as `cov(log_N, log_loss) / var(log_N)`
+  - Return negative slope as the exponent
+</Card>
+
+<Accordion title="Reference Solution">
+```python
+from __future__ import annotations
+import math
+
+def estimate_power_law_exponent(
+    token_counts: list[float],
+    loss_values: list[float],
+) -> float:
+    log_tokens = [math.log(value) for value in token_counts]
+    log_losses = [math.log(value) for value in loss_values]
+    mean_log_tokens = sum(log_tokens) / len(log_tokens)
+    mean_log_losses = sum(log_losses) / len(log_losses)
+    numerator = sum(
+        (x_value - mean_log_tokens) * (y_value - mean_log_losses)
+        for x_value, y_value in zip(log_tokens, log_losses)
+    )
+    denominator = sum((x_value - mean_log_tokens) ** 2 for x_value in log_tokens)
+    slope = numerator / denominator
+    return -slope
+```
+</Accordion>
+
+## Formula to Code Mapping
+
+- Log transform maps to `math.log` on counts and losses
+- Linear slope maps to covariance over variance in log space
+- Negative slope gives the power-law exponent
+
+## Scaling Law Insights
+
+<Info>
+**Chinchilla scaling laws** (DeepMind, 2022) show:
+- For compute-optimal training, model size and training tokens should scale together
+- Many models are **undertrained** - they would benefit more from additional data than additional parameters
+- Optimal ratio is roughly 20 tokens per parameter
+</Info>
+
+## Practical Applications
+
+1. **Early stopping** - predict if a run will reach target performance
+2. **Hyperparameter tuning** - compare runs at small scale before expensive full training
+3. **Budget planning** - estimate compute needed for desired performance
+4. **Architecture search** - identify promising variants quickly
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="karpathy/nanoGPT" href="https://github.com/karpathy/nanoGPT">
+    Minimal GPT Implementation
+  </Card>
+  <Card title="Language Models are Few-Shot Learners" href="https://arxiv.org/abs/2005.14165">
+    GPT-3 Paper (OpenAI)
+  </Card>
+</CardGroup>
+
+<CardGroup cols={3}>
+  <Card title="Chinchilla Paper" href="https://arxiv.org/abs/2203.15556">
+    Compute-Optimal Training
+  </Card>
+  <Card title="JAX Scaling Book" href="https://jax-ml.github.io/scaling-book/">
+    Practical Scaling Guide
+  </Card>
+  <Card title="Lilian Weng Blog" href="https://lilianweng.github.io/">
+    ML Research Summaries
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Read math_walkthrough.md">
+    Reproduce derivation steps on paper
+  </Step>
+  <Step title="Run toy_example.py">
+    Verify log-space linear relationship
+  </Step>
+  <Step title="Implement problem.py">
+    Build power-law estimator from scratch
+  </Step>
+  <Step title="Validate with tests">
+    Unskip exercise tests and run pytest
+  </Step>
+  <Step title="Compare and reflect">
+    Review the reference solution and write a short reflection
+  </Step>
+</Steps>

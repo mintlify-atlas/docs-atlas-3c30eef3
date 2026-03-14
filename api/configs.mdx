@@ -1,0 +1,695 @@
+---
+title: "Configuration System"
+description: "Structured configuration management for reproducible experiments"
+---
+
+## Overview
+
+The configuration system provides a type-safe, hierarchical way to manage all experiment parameters through YAML files and Python dataclasses. This ensures reproducibility and makes it easy to version control your experimental setup.
+
+## Configuration Classes
+
+All configuration classes are frozen dataclasses with sensible defaults for local-first experimentation.
+
+### ModelConfig
+
+Defines the transformer model architecture.
+
+```python
+@dataclass(frozen=True)
+class ModelConfig:
+    vocabulary_size: int = 128
+    context_length: int = 64
+    embedding_dimension: int = 128
+    head_count: int = 4
+    layer_count: int = 4
+    feed_forward_dimension: int = 256
+    dropout_probability: float = 0.1
+```
+
+<ParamField path="vocabulary_size" type="int" default="128">
+  Number of unique tokens in the vocabulary
+</ParamField>
+
+<ParamField path="context_length" type="int" default="64">
+  Maximum sequence length the model can process
+</ParamField>
+
+<ParamField path="embedding_dimension" type="int" default="128">
+  Dimension of token embeddings and hidden states
+</ParamField>
+
+<ParamField path="head_count" type="int" default="4">
+  Number of attention heads in multi-head attention
+</ParamField>
+
+<ParamField path="layer_count" type="int" default="4">
+  Number of transformer blocks (encoder/decoder layers)
+</ParamField>
+
+<ParamField path="feed_forward_dimension" type="int" default="256">
+  Hidden dimension of the feed-forward network (typically 4x embedding_dimension)
+</ParamField>
+
+<ParamField path="dropout_probability" type="float" default="0.1">
+  Dropout rate for regularization (0.0 to 1.0)
+</ParamField>
+
+---
+
+### TrainConfig
+
+Defines training hyperparameters and optimization settings.
+
+```python
+@dataclass(frozen=True)
+class TrainConfig:
+    batch_size: int = 8
+    learning_rate: float = 3e-4
+    max_steps: int = 50
+    warmup_steps: int = 10
+    weight_decay: float = 0.01
+    gradient_clip_norm: float = 1.0
+    enable_full_training: bool = False
+```
+
+<ParamField path="batch_size" type="int" default="8">
+  Number of sequences per training batch
+</ParamField>
+
+<ParamField path="learning_rate" type="float" default="3e-4">
+  Initial learning rate for optimizer (0.0003)
+</ParamField>
+
+<ParamField path="max_steps" type="int" default="50">
+  Maximum number of training steps (default is intentionally small for safety)
+</ParamField>
+
+<ParamField path="warmup_steps" type="int" default="10">
+  Number of steps for learning rate warmup
+</ParamField>
+
+<ParamField path="weight_decay" type="float" default="0.01">
+  L2 regularization coefficient
+</ParamField>
+
+<ParamField path="gradient_clip_norm" type="float" default="1.0">
+  Maximum gradient norm for clipping (prevents exploding gradients)
+</ParamField>
+
+<ParamField path="enable_full_training" type="bool" default="false">
+  Safety flag: must be explicitly enabled for longer training runs
+</ParamField>
+
+<Warning>
+  `enable_full_training` is `False` by default to prevent accidental long-running experiments. Set to `True` only when intentionally running full training.
+</Warning>
+
+---
+
+### DataConfig
+
+Defines dataset and data loading parameters.
+
+```python
+@dataclass(frozen=True)
+class DataConfig:
+    dataset_name: str = "synthetic_character_corpus"
+    use_synthetic_data: bool = True
+    sequence_length: int = 64
+    synthetic_repeat_count: int = 256
+```
+
+<ParamField path="dataset_name" type="str" default="synthetic_character_corpus">
+  Identifier for the dataset being used
+</ParamField>
+
+<ParamField path="use_synthetic_data" type="bool" default="true">
+  Whether to use synthetic data (see `synthetic_text.py`)
+</ParamField>
+
+<ParamField path="sequence_length" type="int" default="64">
+  Length of each training sequence
+</ParamField>
+
+<ParamField path="synthetic_repeat_count" type="int" default="256">
+  Number of times to repeat the seed phrase in synthetic corpus
+</ParamField>
+
+---
+
+### EvalConfig
+
+Defines evaluation and logging parameters.
+
+```python
+@dataclass(frozen=True)
+class EvalConfig:
+    evaluation_steps: int = 10
+    include_generation_preview: bool = True
+```
+
+<ParamField path="evaluation_steps" type="int" default="10">
+  Evaluate model every N training steps
+</ParamField>
+
+<ParamField path="include_generation_preview" type="bool" default="true">
+  Whether to generate sample text during evaluation
+</ParamField>
+
+---
+
+### SystemConfig
+
+Defines system-level settings (hardware, reproducibility, distribution).
+
+```python
+@dataclass(frozen=True)
+class SystemConfig:
+    random_seed: int = 7
+    device_preference: str = "cpu"
+    allow_multi_gpu: bool = False
+    distributed_backend: str = "none"
+```
+
+<ParamField path="random_seed" type="int" default="7">
+  Random seed for reproducibility (used with `set_global_random_seed()`)
+</ParamField>
+
+<ParamField path="device_preference" type="str" default="cpu">
+  Preferred device: `"cpu"`, `"cuda"`, `"mps"`, or `"auto"`
+</ParamField>
+
+<ParamField path="allow_multi_gpu" type="bool" default="false">
+  Enable multi-GPU training if available
+</ParamField>
+
+<ParamField path="distributed_backend" type="str" default="none">
+  Distributed training backend: `"none"`, `"nccl"`, `"gloo"`, or `"mpi"`
+</ParamField>
+
+---
+
+### RepositoryConfig
+
+Root configuration object that contains all sub-configurations.
+
+```python
+@dataclass(frozen=True)
+class RepositoryConfig:
+    model: ModelConfig = ModelConfig()
+    train: TrainConfig = TrainConfig()
+    data: DataConfig = DataConfig()
+    evaluation: EvalConfig = EvalConfig()
+    system: SystemConfig = SystemConfig()
+```
+
+This provides a single entry point for all configuration with hierarchical access:
+
+```python
+config = RepositoryConfig()
+print(config.model.embedding_dimension)  # 128
+print(config.train.learning_rate)         # 0.0003
+print(config.system.random_seed)          # 7
+```
+
+---
+
+## Functions
+
+### load_repository_config()
+
+Loads configuration from a YAML file and creates a `RepositoryConfig` object.
+
+```python
+def load_repository_config(path: Path) -> RepositoryConfig
+```
+
+<ParamField path="path" type="Path" required>
+  Path to YAML configuration file
+</ParamField>
+
+<ResponseField name="config" type="RepositoryConfig">
+  Fully populated configuration object with defaults for missing values
+</ResponseField>
+
+#### Behavior
+
+- Reads YAML file and validates it contains a top-level mapping (dict)
+- Merges provided values with defaults from dataclass definitions
+- Returns immutable configuration object
+- Raises `ValueError` if file format is invalid
+
+#### Example
+
+```python
+from pathlib import Path
+from ai_researcher_repo.configs import load_repository_config
+
+# Load from defaults
+config = load_repository_config(Path("configs/defaults.yaml"))
+
+print(f"Model has {config.model.layer_count} layers")
+print(f"Training for {config.train.max_steps} steps")
+print(f"Random seed: {config.system.random_seed}")
+```
+
+---
+
+## YAML Configuration Format
+
+### Default Configuration
+
+Here's the complete `configs/defaults.yaml` file:
+
+```yaml
+model:
+  vocabulary_size: 128
+  context_length: 64
+  embedding_dimension: 128
+  head_count: 4
+  layer_count: 4
+  feed_forward_dimension: 256
+  dropout_probability: 0.1
+
+train:
+  batch_size: 8
+  learning_rate: 0.0003
+  max_steps: 20
+  warmup_steps: 10
+  weight_decay: 0.01
+  gradient_clip_norm: 1.0
+  enable_full_training: false
+
+data:
+  dataset_name: synthetic_character_corpus
+  use_synthetic_data: true
+  sequence_length: 64
+  synthetic_repeat_count: 256
+
+evaluation:
+  evaluation_steps: 10
+  include_generation_preview: true
+
+system:
+  random_seed: 7
+  device_preference: cpu
+  allow_multi_gpu: false
+  distributed_backend: none
+```
+
+### Full Training Configuration
+
+The `configs/full_training_opt_in.yaml` shows how to override specific values:
+
+```yaml
+# This file is intentionally opt-in and not used by default commands.
+# Use only when you explicitly want a longer experiment.
+
+train:
+  max_steps: 120
+  enable_full_training: true
+
+system:
+  device_preference: cuda
+  allow_multi_gpu: true
+  distributed_backend: nccl
+```
+
+Only specified fields are overridden; others use defaults from the dataclasses.
+
+---
+
+## Usage Examples
+
+### Basic Loading
+
+```python
+from pathlib import Path
+from ai_researcher_repo.configs import load_repository_config
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+
+# Load configuration
+config = load_repository_config(Path("configs/defaults.yaml"))
+
+# Set random seed from config
+set_global_random_seed(config.system.random_seed)
+
+# Use configuration values
+model = create_model(
+    vocab_size=config.model.vocabulary_size,
+    d_model=config.model.embedding_dimension,
+    n_heads=config.model.head_count,
+    n_layers=config.model.layer_count
+)
+```
+
+### Creating Custom Configurations
+
+```python
+from ai_researcher_repo.configs import (
+    RepositoryConfig,
+    ModelConfig,
+    TrainConfig
+)
+
+# Override specific values programmatically
+custom_config = RepositoryConfig(
+    model=ModelConfig(
+        vocabulary_size=256,  # Larger vocab
+        embedding_dimension=256,
+        layer_count=8  # Deeper model
+    ),
+    train=TrainConfig(
+        learning_rate=1e-3,  # Higher LR
+        max_steps=100,
+        enable_full_training=True
+    )
+)
+
+# Other fields use defaults
+print(custom_config.system.random_seed)  # 7 (default)
+```
+
+### Partial YAML Override
+
+```yaml
+# configs/my_experiment.yaml
+# Only override what you need
+
+model:
+  layer_count: 8
+  embedding_dimension: 256
+
+train:
+  learning_rate: 0.001
+  max_steps: 100
+```
+
+```python
+config = load_repository_config(Path("configs/my_experiment.yaml"))
+
+# Specified values
+print(config.model.layer_count)  # 8
+print(config.train.learning_rate)  # 0.001
+
+# Defaults for unspecified
+print(config.model.head_count)  # 4 (default)
+print(config.system.random_seed)  # 7 (default)
+```
+
+### Complete Training Script
+
+```python
+from pathlib import Path
+from ai_researcher_repo.configs import load_repository_config
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+from ai_researcher_repo.data.synthetic_text import (
+    create_synthetic_corpus,
+    build_character_vocabulary,
+    encode_text,
+    build_toy_batches
+)
+
+def main(config_path: str):
+    # Load configuration
+    config = load_repository_config(Path(config_path))
+    
+    # Setup reproducibility
+    set_global_random_seed(config.system.random_seed)
+    
+    # Create dataset from config
+    corpus = create_synthetic_corpus(
+        repeat_count=config.data.synthetic_repeat_count
+    )
+    vocab = build_character_vocabulary(corpus)
+    tokens = encode_text(corpus, vocab)
+    batch = build_toy_batches(
+        tokens,
+        sequence_length=config.data.sequence_length,
+        batch_size=config.train.batch_size
+    )
+    
+    # Create model from config
+    model = create_transformer(
+        vocab_size=config.model.vocabulary_size,
+        d_model=config.model.embedding_dimension,
+        n_heads=config.model.head_count,
+        n_layers=config.model.layer_count,
+        d_ff=config.model.feed_forward_dimension,
+        dropout=config.model.dropout_probability,
+        max_seq_len=config.model.context_length
+    )
+    
+    # Setup optimizer from config
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=config.train.learning_rate,
+        weight_decay=config.train.weight_decay
+    )
+    
+    # Training loop from config
+    for step in range(config.train.max_steps):
+        # Forward pass
+        logits = model(batch.input_tokens)
+        loss = compute_loss(logits, batch.target_tokens)
+        
+        # Backward pass
+        loss.backward()
+        
+        # Gradient clipping from config
+        torch.nn.utils.clip_grad_norm_(
+            model.parameters(),
+            config.train.gradient_clip_norm
+        )
+        
+        optimizer.step()
+        optimizer.zero_grad()
+        
+        # Evaluate per config
+        if step % config.evaluation.evaluation_steps == 0:
+            print(f"Step {step}: Loss {loss.item():.4f}")
+            
+            if config.evaluation.include_generation_preview:
+                generated = model.generate(max_length=50)
+                print(f"Generated: {generated}")
+
+if __name__ == "__main__":
+    main("configs/defaults.yaml")
+```
+
+### Configuration Validation
+
+```python
+from pathlib import Path
+from ai_researcher_repo.configs import load_repository_config
+
+def validate_config(config_path: Path) -> bool:
+    """Validate configuration file."""
+    try:
+        config = load_repository_config(config_path)
+        
+        # Check safety constraints
+        if config.train.max_steps > 50 and not config.train.enable_full_training:
+            print("Warning: max_steps > 50 requires enable_full_training=true")
+            return False
+        
+        # Check architectural constraints
+        if config.model.embedding_dimension % config.model.head_count != 0:
+            print("Error: embedding_dimension must be divisible by head_count")
+            return False
+        
+        # Check data constraints
+        if config.data.sequence_length > config.model.context_length:
+            print("Error: sequence_length exceeds model context_length")
+            return False
+        
+        print("Configuration valid!")
+        return True
+        
+    except Exception as e:
+        print(f"Configuration error: {e}")
+        return False
+
+# Usage
+if validate_config(Path("configs/my_experiment.yaml")):
+    run_experiment()
+```
+
+---
+
+## Best Practices
+
+### 1. Version Control Your Configs
+
+```bash
+# Commit configs alongside code
+git add configs/my_experiment.yaml
+git commit -m "Add config for attention ablation study"
+```
+
+### 2. Use Descriptive Config Names
+
+```
+configs/
+├── defaults.yaml                    # Base configuration
+├── full_training_opt_in.yaml       # Extended training
+├── ablation_no_dropout.yaml        # Specific experiment
+├── scaling_large_model.yaml        # Architecture variant
+└── gpu_distributed.yaml            # Hardware configuration
+```
+
+### 3. Document Config Changes
+
+```yaml
+# configs/experiment_v2.yaml
+# Experiment: Testing higher learning rate
+# Date: 2024-03-14
+# Baseline: configs/defaults.yaml
+
+train:
+  learning_rate: 0.001  # Increased from 0.0003
+  max_steps: 100
+  enable_full_training: true
+```
+
+### 4. Separate Concerns
+
+Create focused override files:
+
+```yaml
+# configs/hardware/gpu.yaml
+system:
+  device_preference: cuda
+  allow_multi_gpu: false
+```
+
+```yaml
+# configs/models/large.yaml
+model:
+  embedding_dimension: 512
+  head_count: 8
+  layer_count: 12
+  feed_forward_dimension: 2048
+```
+
+---
+
+## Configuration Hierarchy
+
+Configuration values are resolved in this order:
+
+1. **YAML file values** (highest priority)
+2. **Dataclass defaults** (fallback)
+
+Example:
+
+```yaml
+# Only specify learning_rate
+train:
+  learning_rate: 0.001
+```
+
+```python
+config = load_repository_config(Path("config.yaml"))
+
+print(config.train.learning_rate)      # 0.001 (from YAML)
+print(config.train.batch_size)         # 8 (from dataclass default)
+print(config.train.gradient_clip_norm) # 1.0 (from dataclass default)
+```
+
+---
+
+## Error Handling
+
+### Invalid YAML Structure
+
+```python
+# Bad config file (list instead of dict)
+# configs/bad.yaml:
+# - item1
+# - item2
+
+try:
+    config = load_repository_config(Path("configs/bad.yaml"))
+except ValueError as e:
+    print(e)  # "Config file must contain a top-level mapping"
+```
+
+### Missing File
+
+```python
+try:
+    config = load_repository_config(Path("nonexistent.yaml"))
+except FileNotFoundError:
+    print("Config file not found, using defaults")
+    config = RepositoryConfig()  # All defaults
+```
+
+### Type Mismatches
+
+```yaml
+# configs/bad_types.yaml
+model:
+  layer_count: "four"  # Should be int
+```
+
+```python
+try:
+    config = load_repository_config(Path("configs/bad_types.yaml"))
+except TypeError as e:
+    print(f"Type error in config: {e}")
+```
+
+---
+
+## Integration Examples
+
+### With Seeding
+
+```python
+from ai_researcher_repo.configs import load_repository_config
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+
+config = load_repository_config(Path("configs/defaults.yaml"))
+set_global_random_seed(config.system.random_seed)
+```
+
+### With Synthetic Data
+
+```python
+from ai_researcher_repo.configs import load_repository_config
+from ai_researcher_repo.data.synthetic_text import create_synthetic_corpus
+
+config = load_repository_config(Path("configs/defaults.yaml"))
+corpus = create_synthetic_corpus(
+    repeat_count=config.data.synthetic_repeat_count
+)
+```
+
+### With Evaluation Metrics
+
+```python
+from ai_researcher_repo.configs import load_repository_config
+from ai_researcher_repo.evaluation.metrics import perplexity_from_average_loss
+
+config = load_repository_config(Path("configs/defaults.yaml"))
+
+# Use config for eval frequency
+for step in range(config.train.max_steps):
+    loss = train_step()
+    
+    if step % config.evaluation.evaluation_steps == 0:
+        ppl = perplexity_from_average_loss(loss)
+        print(f"Step {step}: Perplexity {ppl:.2f}")
+```
+
+---
+
+## Source Location
+
+```
+src/ai_researcher_repo/configs.py
+configs/defaults.yaml
+configs/full_training_opt_in.yaml
+```

@@ -1,0 +1,352 @@
+---
+title: 'CLI Commands'
+description: 'Comprehensive reference for all ai-researcher CLI commands'
+icon: 'code'
+---
+
+## prepare-data
+
+Prepare datasets and generate data preparation notes. This command creates documentation about dataset usage, emphasizing that the repository uses synthetic and small open datasets by default.
+
+### Usage
+
+```bash
+ai-researcher prepare-data [--output OUTPUT]
+```
+
+### Parameters
+
+<ParamField path="--output" type="string" default="outputs/data_prep_notes.txt">
+  Path where data preparation notes will be written. Parent directories are created automatically if they don't exist.
+</ParamField>
+
+### Example
+
+<CodeGroup>
+```bash Default
+ai-researcher prepare-data
+```
+
+```bash Custom Output
+ai-researcher prepare-data --output my_outputs/notes.txt
+```
+</CodeGroup>
+
+### Output
+
+```
+Wrote data preparation notes to outputs/data_prep_notes.txt
+```
+
+The generated file contains:
+```
+This repository uses synthetic and small open datasets by default.
+Large-scale datasets are opt-in and documented in references/datasets.md.
+```
+
+### Use Cases
+
+- Initialize data preparation documentation
+- Remind users about dataset policies
+- Set up output directories for experiments
+
+---
+
+## train-toy
+
+Train a toy language model using PyTorch. This command runs a small-scale training experiment suitable for educational purposes and quick iterations.
+
+### Usage
+
+```bash
+ai-researcher train-toy [--config CONFIG]
+```
+
+### Parameters
+
+<ParamField path="--config" type="string" default="None">
+  Path to a repository configuration file. If not specified, uses default `RepositoryConfig()` settings.
+</ParamField>
+
+### Example
+
+<CodeGroup>
+```bash Default Config
+ai-researcher train-toy
+```
+
+```bash Custom Config
+ai-researcher train-toy --config configs/my_config.yaml
+```
+</CodeGroup>
+
+### Output
+
+```
+steps_completed=100
+final_loss=2.345678
+```
+
+The command outputs:
+- `steps_completed`: Number of training steps executed
+- `final_loss`: Final training loss value (6 decimal places)
+
+### Implementation Details
+
+- Uses `train_toy_language_model()` from `ai_researcher_repo.training.pytorch_trainer`
+- Returns a `TrainingSummary` object with metrics
+- Suitable for quick experiments and curriculum exercises
+
+### Use Cases
+
+- Test training pipeline with toy models
+- Verify configuration settings
+- Quick iteration during development
+- Educational demonstrations
+
+---
+
+## eval
+
+Evaluate model performance using toy metrics. Computes cross-entropy loss and perplexity on sample data for demonstration purposes.
+
+### Usage
+
+```bash
+ai-researcher eval
+```
+
+### Parameters
+
+This command takes no parameters.
+
+### Example
+
+```bash
+ai-researcher eval
+```
+
+### Output
+
+```
+toy_cross_entropy=0.114844
+toy_perplexity=1.121689
+```
+
+The command computes:
+- `toy_cross_entropy`: Cross-entropy loss for a sample prediction
+- `toy_perplexity`: Perplexity metric derived from the loss
+
+### Implementation Details
+
+- Uses sample logits: `[2.0, 1.0, 0.1]` with target index `0`
+- Calls `cross_entropy_for_target()` and `perplexity_from_average_loss()`
+- Demonstrates evaluation metrics calculation
+
+### Use Cases
+
+- Verify evaluation metric implementations
+- Understand cross-entropy and perplexity calculations
+- Test evaluation pipeline
+- Educational demonstrations of metrics
+
+---
+
+## export-diagrams
+
+Export curriculum diagrams from all weeks to a manifest file. Searches for Mermaid diagram files across the curriculum structure.
+
+### Usage
+
+```bash
+ai-researcher export-diagrams [--output OUTPUT]
+```
+
+### Parameters
+
+<ParamField path="--output" type="string" default="outputs/diagram_manifest.txt">
+  Path where the diagram manifest will be written. Parent directories are created automatically.
+</ParamField>
+
+### Example
+
+<CodeGroup>
+```bash Default
+ai-researcher export-diagrams
+```
+
+```bash Custom Output
+ai-researcher export-diagrams --output manifests/diagrams.txt
+```
+</CodeGroup>
+
+### Output
+
+```
+Exported diagram manifest with 12 entries
+```
+
+The manifest file contains sorted paths to all diagram files:
+```
+curriculum/weeks/week-01/diagram.mmd
+curriculum/weeks/week-02/diagram.mmd
+curriculum/weeks/week-03/diagram.mmd
+...
+```
+
+### Implementation Details
+
+- Searches `curriculum/weeks/*/diagram.mmd` using glob pattern
+- Results are sorted alphabetically
+- One diagram path per line
+
+### Use Cases
+
+- Generate overview of all curriculum diagrams
+- Build documentation indexes
+- Validate diagram existence across weeks
+- Create diagram processing pipelines
+
+---
+
+## run-checks
+
+Run comprehensive quality checks including linting, type checking, and testing. Executes ruff, mypy, and pytest in sequence.
+
+### Usage
+
+```bash
+ai-researcher run-checks
+```
+
+### Parameters
+
+This command takes no parameters.
+
+### Example
+
+```bash
+ai-researcher run-checks
+```
+
+### Checks Performed
+
+The command runs the following checks in order:
+
+1. **Ruff linting**: `python -m ruff check src tests`
+2. **MyPy type checking**: `python -m mypy src`
+3. **Pytest tests**: `python -m pytest -m "unit or pedagogy or safety"`
+
+### Exit Behavior
+
+- Stops at the first failing check
+- Returns the exit code from the failed check
+- Returns `0` only if all checks pass
+
+### Output
+
+Output varies depending on check results. Each tool produces its own output format.
+
+### Implementation Details
+
+- Uses the same Python executable that's running the CLI
+- Runs checks sequentially, not in parallel
+- Targets only unit, pedagogy, and safety test markers
+
+### Use Cases
+
+- Pre-commit validation
+- CI/CD pipeline checks
+- Local development quality assurance
+- Verify code before pushing changes
+
+---
+
+## run-module-tests
+
+Run pytest tests for a specific curriculum week module. Executes tests located in the week's dedicated test directory.
+
+### Usage
+
+```bash
+ai-researcher run-module-tests --week WEEK
+```
+
+### Parameters
+
+<ParamField path="--week" type="string" required>
+  Week identifier (e.g., "week-01", "week-02"). Must match a directory name in `curriculum/weeks/`.
+</ParamField>
+
+### Example
+
+<CodeGroup>
+```bash Week 1
+ai-researcher run-module-tests --week week-01
+```
+
+```bash Week 5
+ai-researcher run-module-tests --week week-05
+```
+</CodeGroup>
+
+### Output
+
+Pytest output showing test results for the specified week:
+
+```
+============================= test session starts ==============================
+platform linux -- Python 3.11.0, pytest-7.4.0, pluggy-1.2.0
+rootdir: /path/to/repo
+collected 15 items
+
+curriculum/weeks/week-01/tests/test_module.py ............... [100%]
+
+============================== 15 passed in 0.45s ==============================
+```
+
+### Error Handling
+
+Raises `FileNotFoundError` if the week's test directory doesn't exist:
+
+```
+FileNotFoundError: Module tests were not found for week week-99
+```
+
+### Implementation Details
+
+- Tests must be located at: `curriculum/weeks/{week}/tests/`
+- Runs `pytest` on the entire test directory
+- Uses the same Python executable that's running the CLI
+
+### Use Cases
+
+- Test specific curriculum modules during development
+- Validate week-specific implementations
+- Focus testing on particular curriculum sections
+- Debug module-specific issues
+
+---
+
+## Global Options
+
+All commands support standard help output:
+
+```bash
+ai-researcher <command> --help
+```
+
+## Error Handling
+
+Commands return appropriate exit codes:
+- `0`: Success
+- Non-zero: Failure (check stderr for details)
+
+## Source Reference
+
+All CLI commands are implemented in `src/ai_researcher_repo/cli.py`. The main entry point is the `main()` function, which:
+
+1. Builds the argument parser with all subcommands
+2. Parses command-line arguments
+3. Dispatches to the appropriate handler function
+4. Exits with the handler's return code

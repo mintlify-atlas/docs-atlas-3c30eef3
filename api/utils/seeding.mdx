@@ -1,0 +1,404 @@
+---
+title: "Random Seeding"
+description: "Deterministic seeding utilities for reproducible experiments"
+---
+
+## Overview
+
+The `utils.seeding` module provides a single function to set random seeds across all major libraries (Python, NumPy, PyTorch) to ensure reproducible results in machine learning experiments.
+
+## Functions
+
+### set_global_random_seed()
+
+Sets the random seed for all common libraries used in ML experiments.
+
+```python
+def set_global_random_seed(random_seed: int) -> None
+```
+
+<ParamField path="random_seed" type="int" required>
+  Integer seed value (e.g., 42, 7, 2024)
+</ParamField>
+
+#### Libraries Seeded
+
+This function sets seeds for:
+
+1. **Python `random` module**: For built-in random number generation
+2. **NumPy**: For array operations and scientific computing
+3. **PyTorch** (if installed): For tensor operations and neural network training
+   - CPU random state
+   - CUDA random state (all GPUs if available)
+
+#### Implementation
+
+```python
+def set_global_random_seed(random_seed: int) -> None:
+    random.seed(random_seed)
+    numpy.random.seed(random_seed)
+    
+    try:
+        import torch
+        torch.manual_seed(random_seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(random_seed)
+    except ImportError:
+        return  # PyTorch not installed, skip
+```
+
+The function gracefully handles environments without PyTorch installed.
+
+---
+
+## Usage Examples
+
+### Basic Usage
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+
+# Set seed at the start of your script
+set_global_random_seed(42)
+
+# Now all random operations are deterministic
+import random
+import numpy as np
+
+print(random.random())  # Same value every run
+print(np.random.randn(3))  # Same array every run
+```
+
+### Training Reproducibility
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+from ai_researcher_repo.data.synthetic_text import create_synthetic_corpus
+
+def train_model_reproducibly(seed: int = 42):
+    """Train with guaranteed reproducibility."""
+    
+    # Set seed before any random operations
+    set_global_random_seed(seed)
+    
+    # Data generation will be deterministic
+    corpus = create_synthetic_corpus(repeat_count=256)
+    
+    # Model initialization will be deterministic
+    model = TransformerModel(
+        vocab_size=128,
+        embedding_dim=256
+    )
+    
+    # Training loop will be deterministic
+    for epoch in range(10):
+        loss = train_epoch(model, corpus)
+        print(f"Epoch {epoch}: Loss {loss:.4f}")
+    
+    return model
+
+# These will produce identical results
+model1 = train_model_reproducibly(seed=7)
+model2 = train_model_reproducibly(seed=7)
+assert_models_equal(model1, model2)
+```
+
+### Experiment Comparison
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+
+def compare_architectures():
+    """Compare different architectures with same random conditions."""
+    
+    results = {}
+    
+    for architecture in ["standard", "with_rope", "with_alibi"]:
+        # Reset seed for fair comparison
+        set_global_random_seed(42)
+        
+        model = build_model(architecture)
+        final_loss = train(model)
+        
+        results[architecture] = final_loss
+    
+    return results
+```
+
+### Ablation Studies
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+
+def ablation_study():
+    """Test impact of different hyperparameters."""
+    
+    learning_rates = [1e-4, 3e-4, 1e-3]
+    
+    for lr in learning_rates:
+        # Same initialization for each learning rate
+        set_global_random_seed(2024)
+        
+        model = create_model()
+        optimizer = Adam(model.parameters(), lr=lr)
+        
+        final_loss = train(model, optimizer)
+        print(f"LR {lr}: Final Loss {final_loss:.4f}")
+```
+
+### Multi-GPU Training
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+import torch
+
+def setup_distributed_training(rank: int, world_size: int):
+    """Setup for distributed training with reproducibility."""
+    
+    # Set base seed + rank offset for each process
+    base_seed = 42
+    set_global_random_seed(base_seed + rank)
+    
+    # Initialize distributed training
+    torch.distributed.init_process_group(
+        backend='nccl',
+        rank=rank,
+        world_size=world_size
+    )
+    
+    # Each GPU has different but reproducible randomness
+    model = create_model()
+    model = torch.nn.parallel.DistributedDataParallel(model)
+    
+    return model
+```
+
+---
+
+## Best Practices
+
+### 1. Call Early
+
+Set the seed before any random operations:
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+
+# Good: Seed set first
+set_global_random_seed(42)
+model = create_model()  # Uses seeded initialization
+data = load_data()      # Uses seeded shuffling
+
+# Bad: Random operations before seed
+model = create_model()  # Non-deterministic!
+set_global_random_seed(42)  # Too late
+```
+
+### 2. Document Your Seed
+
+Always record the seed used in experiments:
+
+```python
+SEED = 42
+set_global_random_seed(SEED)
+
+results = {
+    'seed': SEED,
+    'final_loss': train(),
+    'timestamp': datetime.now()
+}
+
+save_results(results)
+```
+
+### 3. Use with Configuration
+
+```python
+from ai_researcher_repo.configs import load_repository_config
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+from pathlib import Path
+
+# Load seed from config file
+config = load_repository_config(Path("configs/defaults.yaml"))
+set_global_random_seed(config.system.random_seed)
+
+print(f"Running with seed: {config.system.random_seed}")
+```
+
+### 4. Test Reproducibility
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+import torch
+
+def test_reproducibility():
+    """Verify seeding works correctly."""
+    
+    # First run
+    set_global_random_seed(7)
+    model1 = create_model()
+    weights1 = [p.clone() for p in model1.parameters()]
+    
+    # Second run with same seed
+    set_global_random_seed(7)
+    model2 = create_model()
+    weights2 = [p.clone() for p in model2.parameters()]
+    
+    # Should be identical
+    for w1, w2 in zip(weights1, weights2):
+        assert torch.allclose(w1, w2), "Seeding not working!"
+    
+    print("Reproducibility test passed!")
+
+test_reproducibility()
+```
+
+---
+
+## Limitations
+
+<Warning>
+  **CUDA Non-Determinism**: Some CUDA operations (like certain convolutions and attention kernels) may not be fully deterministic even with seeding. For complete reproducibility, set:
+  
+  ```python
+  torch.backends.cudnn.deterministic = True
+  torch.backends.cudnn.benchmark = False
+  ```
+  
+  This may reduce performance.
+</Warning>
+
+### Other Sources of Non-Determinism
+
+1. **Multi-threading**: DataLoader workers may introduce randomness
+   ```python
+   # Use single worker for full reproducibility
+   dataloader = DataLoader(dataset, num_workers=0)
+   ```
+
+2. **Hardware differences**: Different GPUs may produce slightly different results
+
+3. **Library versions**: Different versions of PyTorch/NumPy may have different implementations
+
+4. **Operating system**: Thread scheduling can affect distributed training
+
+---
+
+## Common Patterns
+
+### Experiment Tracking
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+import json
+
+class ReproducibleExperiment:
+    def __init__(self, seed: int):
+        self.seed = seed
+        set_global_random_seed(seed)
+        self.results = {'seed': seed}
+    
+    def run(self):
+        # Your experiment code
+        model = create_model()
+        final_loss = train(model)
+        self.results['final_loss'] = final_loss
+    
+    def save(self, path: str):
+        with open(path, 'w') as f:
+            json.dump(self.results, f, indent=2)
+
+# Usage
+experiment = ReproducibleExperiment(seed=42)
+experiment.run()
+experiment.save('results/experiment_001.json')
+```
+
+### Hyperparameter Sweeps
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+
+def sweep_learning_rates():
+    """Test multiple learning rates with same random conditions."""
+    
+    base_seed = 2024
+    learning_rates = [1e-4, 3e-4, 1e-3, 3e-3]
+    
+    for i, lr in enumerate(learning_rates):
+        # Different seed per trial but reproducible
+        trial_seed = base_seed + i
+        set_global_random_seed(trial_seed)
+        
+        print(f"\nTrial {i+1}: LR={lr}, Seed={trial_seed}")
+        results = train_with_lr(lr)
+        print(f"Results: {results}")
+```
+
+---
+
+## Integration with Other Modules
+
+### With Synthetic Data
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+from ai_researcher_repo.data.synthetic_text import create_synthetic_corpus
+
+set_global_random_seed(42)
+corpus = create_synthetic_corpus(repeat_count=256)
+# Corpus generation is deterministic, but seeding ensures
+# consistent behavior if future versions add randomness
+```
+
+### With Configuration System
+
+```python
+from ai_researcher_repo.configs import load_repository_config
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+from pathlib import Path
+
+# configs/defaults.yaml specifies system.random_seed: 7
+config = load_repository_config(Path("configs/defaults.yaml"))
+set_global_random_seed(config.system.random_seed)
+```
+
+### With Evaluation Metrics
+
+```python
+from ai_researcher_repo.utils.seeding import set_global_random_seed
+from ai_researcher_repo.evaluation.metrics import (
+    cross_entropy_for_target,
+    perplexity_from_average_loss
+)
+
+# Seed doesn't affect deterministic metrics,
+# but ensures consistent model initialization
+set_global_random_seed(42)
+model = create_model()
+
+# Metrics are always deterministic
+loss = cross_entropy_for_target(logits, target_index)
+```
+
+---
+
+## Recommended Seeds
+
+Popular seed values in the community:
+
+- **42**: Douglas Adams reference, very common
+- **7**: Lucky number, used in this repository's defaults
+- **2024**: Year-based seeds for temporal tracking
+- **1337**: "leet" speak, common in older papers
+- **0**: Simple default
+
+<Info>
+  The actual seed value doesn't matter for reproducibility, but using community-standard values (like 42) makes your work more relatable to other researchers.
+</Info>
+
+## Source Location
+
+```
+src/ai_researcher_repo/utils/seeding.py
+```

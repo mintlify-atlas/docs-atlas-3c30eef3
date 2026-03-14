@@ -1,0 +1,513 @@
+---
+title: Complete Setup Guide
+description: Comprehensive environment setup for AI Researcher Zero-to-SOTA
+---
+
+This guide covers complete environment setup including Python configuration, dependency installation, framework-specific setup, and verification steps.
+
+## System Requirements
+
+### Python Version
+
+<Note>
+  **Python 3.11 or higher is required.** This is enforced in `pyproject.toml`.
+</Note>
+
+Check your Python version:
+
+```bash
+python3 --version
+```
+
+If you need to upgrade, visit [python.org](https://www.python.org/downloads/) or use your system's package manager:
+
+<CodeGroup>
+```bash macOS (Homebrew)
+brew install python@3.11
+```
+
+```bash Ubuntu/Debian
+sudo apt update
+sudo apt install python3.11 python3.11-venv
+```
+
+```bash Windows (winget)
+winget install Python.Python.3.11
+```
+</CodeGroup>
+
+### Disk Space
+
+- **Minimum**: 500 MB for core dependencies
+- **Recommended**: 5 GB (includes PyTorch and other frameworks)
+- **With datasets**: 10+ GB (for optional full training runs)
+
+### Memory
+
+- **Core curriculum**: 4 GB RAM
+- **PyTorch training**: 8 GB RAM recommended
+- **Full-scale experiments**: 16+ GB RAM
+
+## Installation Options
+
+The repository supports multiple installation modes depending on your learning focus.
+
+### Core Installation (Required)
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone <your-repo-url>
+    cd ai-researcher-repo
+    ```
+  </Step>
+
+  <Step title="Create virtual environment">
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate  # Windows: .venv\Scripts\activate
+    ```
+
+    <Warning>
+      Always use a virtual environment! This prevents dependency conflicts with system Python packages.
+    </Warning>
+  </Step>
+
+  <Step title="Install core dependencies">
+    For basic usage without development tools:
+
+    ```bash
+    pip install -e .
+    ```
+
+    This installs:
+    - `numpy>=1.26.0` - Numerical computing
+    - `pyyaml>=6.0.1` - Configuration file parsing
+    - `ai-researcher` CLI command
+  </Step>
+</Steps>
+
+### Development Installation (Recommended)
+
+For actively working through the curriculum with full tooling:
+
+```bash
+pip install -e .[dev]
+```
+
+Additional tools installed:
+- `pytest>=8.3.0` - Testing framework
+- `pytest-cov>=5.0.0` - Coverage reporting
+- `ruff>=0.6.0` - Fast linter and formatter
+- `mypy>=1.11.0` - Static type checker
+- `types-PyYAML>=6.0.12` - Type stubs for YAML
+
+### Framework-Specific Installation
+
+Install deep learning frameworks as needed for specific weeks:
+
+<CodeGroup>
+```bash PyTorch (Weeks 3-8, 10-14)
+pip install -e .[pytorch]
+
+# Installs torch>=2.4.0
+# Required for: transformer implementations, training loops, autograd
+```
+
+```bash JAX (Advanced Weeks)
+pip install -e .[jax]
+
+# Installs:
+# - jax>=0.6.0
+# - flax>=0.10.0
+# - optax>=0.2.0
+# Required for: functional programming patterns, advanced optimizers
+```
+
+```bash TensorFlow (Optional)
+pip install -e .[tensorflow]
+
+# Installs tensorflow>=2.18.0
+# Required for: TensorFlow-specific examples in week modules
+```
+</CodeGroup>
+
+### Combined Installation
+
+Install everything at once:
+
+```bash
+pip install -e .[dev,pytorch,jax,tensorflow]
+```
+
+<Note>
+  This is the most comprehensive setup, but requires ~3-5 GB of disk space and takes 5-10 minutes to install.
+</Note>
+
+## Repository Structure
+
+Understanding the directory layout helps you navigate efficiently:
+
+```
+ai-researcher-repo/
+├── curriculum/              # Learning content
+│   ├── weeks/              # 16 weekly modules
+│   │   ├── week01_math_optimization_autograd/
+│   │   │   ├── README.md
+│   │   │   ├── math_walkthrough.md
+│   │   │   ├── toy_example.py
+│   │   │   ├── coding_problem.md
+│   │   │   ├── problem.py
+│   │   │   ├── solution.py
+│   │   │   └── tests/
+│   │   └── ...
+│   ├── realms/             # Deep-dive domain tracks
+│   └── README.md
+├── src/ai_researcher_repo/ # Reusable core code
+│   ├── cli.py             # Command-line interface
+│   ├── configs.py         # Configuration management
+│   ├── data/              # Dataset utilities
+│   ├── models/            # Model implementations
+│   ├── training/          # Training loops
+│   ├── evaluation/        # Metrics and evaluation
+│   └── utils/             # Helper functions
+├── tests/                 # Repository-wide tests
+│   ├── unit/              # Fast, isolated tests
+│   ├── integration/       # End-to-end tests
+│   ├── pedagogy/          # Curriculum compliance tests
+│   └── safety/            # Runtime safety checks
+├── configs/               # Configuration files
+│   ├── defaults.yaml      # Toy-safe defaults
+│   └── full_training_opt_in.yaml
+├── references/            # Research sources and citations
+├── tools/                 # Utility scripts
+├── pyproject.toml         # Package configuration
+├── Makefile               # Common command shortcuts
+└── README.md              # Repository overview
+```
+
+### Key Directories Explained
+
+<AccordionGroup>
+  <Accordion title="curriculum/weeks/">
+    Contains all 16 weekly modules. Each week is self-contained with:
+    - Theory walkthroughs
+    - Runnable examples
+    - Coding challenges
+    - Reference solutions
+    - Comprehensive tests
+
+    Weeks build progressively from fundamentals to research-grade implementations.
+  </Accordion>
+
+  <Accordion title="src/ai_researcher_repo/">
+    Reusable library code that supports the curriculum:
+    - **cli.py**: Command-line tools for running tests, training, evaluation
+    - **configs.py**: Type-safe configuration with toy-safe defaults
+    - **models/**: Transformer implementations in PyTorch, JAX, TensorFlow
+    - **training/**: Training loops with safety limits
+    - **data/**: Synthetic data generation and dataset utilities
+  </Accordion>
+
+  <Accordion title="tests/">
+    Multi-level testing strategy:
+    - **unit/**: Fast tests for individual functions
+    - **integration/**: End-to-end workflow tests
+    - **pedagogy/**: Ensures curriculum completeness
+    - **safety/**: Prevents accidental long-running training
+
+    Run with pytest markers: `pytest -m unit` or `pytest -m safety`
+  </Accordion>
+
+  <Accordion title="configs/">
+    YAML configuration files for training and experiments:
+    - **defaults.yaml**: Toy-safe settings (20 steps, CPU, synthetic data)
+    - **full_training_opt_in.yaml**: Real training configuration
+
+    Load with: `ai-researcher train-toy --config configs/defaults.yaml`
+  </Accordion>
+</AccordionGroup>
+
+## Configuration System
+
+The repository uses a type-safe configuration system defined in `src/ai_researcher_repo/configs.py`.
+
+### Default Configuration
+
+From `configs/defaults.yaml`:
+
+```yaml
+model:
+  vocabulary_size: 128
+  context_length: 64
+  embedding_dimension: 128
+  head_count: 4
+  layer_count: 4
+  feed_forward_dimension: 256
+  dropout_probability: 0.1
+
+train:
+  batch_size: 8
+  learning_rate: 0.0003
+  max_steps: 20              # Toy-safe: very short training
+  warmup_steps: 10
+  weight_decay: 0.01
+  gradient_clip_norm: 1.0
+  enable_full_training: false # Must be true for max_steps > 50
+
+data:
+  dataset_name: synthetic_character_corpus
+  use_synthetic_data: true   # No large dataset downloads
+  sequence_length: 64
+  synthetic_repeat_count: 256
+
+system:
+  random_seed: 7
+  device_preference: cpu     # No GPU required
+  allow_multi_gpu: false
+  distributed_backend: none
+```
+
+### Safety Limits
+
+The codebase enforces safety constraints to prevent accidental long training runs:
+
+<Warning>
+  **Training Step Limits**
+  - Hard maximum: 200 steps (`MAX_SAFE_TRAINING_STEPS`)
+  - Requires `enable_full_training: true` for > 50 steps
+  - Enforced in `src/ai_researcher_repo/training/pytorch_trainer.py:34`
+</Warning>
+
+Example error if misconfigured:
+```python
+ValueError: max_steps above 50 requires explicit enable_full_training=true 
+to avoid accidental long runs.
+```
+
+## Verification Steps
+
+<Steps>
+  <Step title="Verify Python and dependencies">
+    ```bash
+    python --version  # Should be 3.11+
+    pip list | grep -E "numpy|pytest|ruff|torch"
+    ```
+  </Step>
+
+  <Step title="Run quality checks">
+    ```bash
+    make run-checks
+    ```
+
+    This runs:
+    1. `ruff check src tests` - Linting
+    2. `mypy src` - Type checking
+    3. `pytest -m "unit or pedagogy or safety"` - Fast tests
+
+    All checks should pass with exit code 0.
+  </Step>
+
+  <Step title="Test CLI commands">
+    ```bash
+    ai-researcher --help
+    ai-researcher eval
+    ```
+
+    Expected output from `eval`:
+    ```
+    toy_cross_entropy=0.116534
+    toy_perplexity=1.123497
+    ```
+  </Step>
+
+  <Step title="Run a toy training loop (PyTorch only)">
+    ```bash
+    ai-researcher train-toy
+    ```
+
+    Expected output:
+    ```
+    steps_completed=20
+    final_loss=0.234567
+    ```
+
+    <Note>
+      This requires PyTorch: `pip install -e .[pytorch]`
+    </Note>
+  </Step>
+
+  <Step title="Test a week module">
+    ```bash
+    ai-researcher run-module-tests --week week01_math_optimization_autograd
+    ```
+
+    Should show passing tests for the reference solution.
+  </Step>
+</Steps>
+
+## Development Workflow
+
+### Code Quality Commands
+
+<CodeGroup>
+```bash Format Code
+make format
+
+# Uses ruff to format src, tests, and curriculum code
+# Run before committing
+```
+
+```bash Lint Code
+make lint
+
+# Checks for style issues and potential bugs
+```
+
+```bash Type Check
+make typecheck
+
+# Runs mypy strict type checking on src/
+```
+
+```bash Run Tests
+make test-fast        # Unit, pedagogy, safety tests
+make test-integration # Integration tests
+```
+</CodeGroup>
+
+### Git Workflow
+
+<Steps>
+  <Step title="Make changes">
+    Work on your implementation in small, focused increments.
+  </Step>
+
+  <Step title="Run checks">
+    ```bash
+    make run-checks
+    ```
+    Keep checks green before committing.
+  </Step>
+
+  <Step title="Commit with conventional prefixes">
+    ```bash
+    git add .
+    git commit -m "feat: implement attention mechanism"
+    git commit -m "docs: add math walkthrough for week 4"
+    git commit -m "test: add edge cases for tokenizer"
+    git commit -m "fix: correct softmax temperature scaling"
+    ```
+
+    Conventional prefixes: `feat`, `docs`, `test`, `fix`, `refactor`, `chore`
+  </Step>
+
+  <Step title="Push frequently">
+    ```bash
+    git push origin main
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Python version is too old">
+    The repository requires Python 3.11+. If `python3 --version` shows an older version:
+
+    1. Install Python 3.11 from python.org or your package manager
+    2. Create venv with specific version: `python3.11 -m venv .venv`
+    3. Activate and install: `source .venv/bin/activate && pip install -e .[dev]`
+  </Accordion>
+
+  <Accordion title="Pip install fails with dependency conflicts">
+    1. Delete existing venv: `rm -rf .venv`
+    2. Create fresh environment: `python3 -m venv .venv`
+    3. Activate: `source .venv/bin/activate`
+    4. Upgrade pip: `pip install --upgrade pip setuptools wheel`
+    5. Install again: `pip install -e .[dev]`
+  </Accordion>
+
+  <Accordion title="PyTorch installation is slow or fails">
+    For CPU-only PyTorch (faster install):
+    ```bash
+    pip install torch --index-url https://download.pytorch.org/whl/cpu
+    pip install -e .[dev]
+    ```
+
+    For GPU support, see [PyTorch Get Started](https://pytorch.org/get-started/locally/).
+  </Accordion>
+
+  <Accordion title="make: command not found">
+    If you don't have `make` installed, run commands directly:
+
+    ```bash
+    # Instead of: make run-checks
+    python -m ruff check src tests
+    python -m mypy src
+    python -m pytest -m "unit or pedagogy or safety"
+    ```
+
+    Or use the CLI:
+    ```bash
+    ai-researcher run-checks
+    ```
+  </Accordion>
+
+  <Accordion title="Tests fail with ModuleNotFoundError">
+    This usually means the package isn't installed in editable mode:
+
+    ```bash
+    pip install -e .[dev]
+    ```
+
+    Or you're not in the repository root:
+    ```bash
+    cd path/to/ai-researcher-repo
+    ```
+  </Accordion>
+
+  <Accordion title="ai-researcher command not found">
+    Ensure:
+    1. Virtual environment is activated (you should see `(.venv)` in prompt)
+    2. Package is installed: `pip install -e .[dev]`
+    3. Check installed scripts: `pip show -f ai-researcher-repo | grep bin`
+
+    The CLI is registered in `pyproject.toml` as:
+    ```toml
+    [project.scripts]
+    ai-researcher = "ai_researcher_repo.cli:main"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Your environment is now fully configured! Here's what to do next:
+
+<CardGroup cols={2}>
+  <Card title="Start Week 1" href="/weeks/week01-math-optimization-autograd">
+    Begin with Math, Optimization, and Autograd
+  </Card>
+  <Card title="Understand Week Structure" href="/curriculum/overview">
+    Learn the weekly learning workflow
+  </Card>
+  <Card title="Explore Testing" href="/resources/testing-strategy">
+    Master the multi-level testing strategy
+  </Card>
+  <Card title="Configuration Guide" href="/api/configs">
+    Deep dive into config system and safety defaults
+  </Card>
+</CardGroup>
+
+## Environment Summary
+
+You now have:
+- Python 3.11+ with virtual environment
+- Core dependencies and development tools installed
+- Optional framework dependencies (PyTorch, JAX, TensorFlow)
+- Working `ai-researcher` CLI
+- Passing quality checks
+- Understanding of repository structure and configuration
+
+Ready to start learning? Head to the [Quickstart](/quickstart) or jump straight into [Week 1](/weeks/week01-math-optimization-autograd.

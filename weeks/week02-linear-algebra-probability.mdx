@@ -1,0 +1,151 @@
+---
+title: "Week 02: Linear Algebra and Probability Foundations"
+description: "Build confidence with matrix-style statistics used in feature analysis and uncertainty reasoning"
+---
+
+## Module Focus
+
+Build confidence with matrix-style statistics used in feature analysis and uncertainty reasoning.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Explain and derive the core formula">
+    Understand the covariance formula `cov(X, Y) = E[(X - mu_X)(Y - mu_Y)]` in plain language.
+  </Step>
+  <Step title="Translate formula to code">
+    Convert covariance mathematics into readable, testable Python code.
+  </Step>
+  <Step title="Solve the coding challenge">
+    Build a complete 2x2 covariance matrix in 40-60 minutes.
+  </Step>
+</Steps>
+
+## Core Formula
+
+```
+cov(X, Y) = E[(X - mu_X)(Y - mu_Y)]
+```
+
+## Mathematical Intuition
+
+Covariance captures whether two variables move together and by how much on average.
+
+<Accordion title="Symbol Glossary">
+  - **mu_X**: mean of variable X
+  - **mu_Y**: mean of variable Y
+  - **cov(X,Y)**: covariance between X and Y
+  - **var(X)**: variance of X (special case where Y = X)
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Compute means">
+    Calculate the mean for each variable across all observations.
+  </Step>
+  <Step title="Center observations">
+    Subtract the mean from each observation to get centered values.
+  </Step>
+  <Step title="Compute products">
+    Average the element-wise products of centered values.
+  </Step>
+</Steps>
+
+## Toy Example Walkthrough
+
+1. Samples: `(1,1)`, `(2,3)`, `(3,5)`
+2. Means: `mu_X = 2`, `mu_Y = 3`
+3. Covariance becomes `4/3`, indicating positive co-movement
+
+### Implementation
+
+```python
+from __future__ import annotations
+
+def run_toy_example() -> dict[str, float]:
+    samples = [(1.0, 1.0), (2.0, 3.0), (3.0, 5.0)]
+    mean_x = sum(sample[0] for sample in samples) / len(samples)
+    mean_y = sum(sample[1] for sample in samples) / len(samples)
+    covariance = sum(
+        (sample[0] - mean_x) * (sample[1] - mean_y) for sample in samples
+    ) / len(samples)
+    variance_x = sum((sample[0] - mean_x) ** 2 for sample in samples) / len(samples)
+    return {
+        "primary_metric": covariance,
+        "secondary_metric": variance_x,
+    }
+```
+
+## Coding Challenge
+
+<Card title="Compute 2x2 Covariance Matrix">
+  **Goal**: Implement `compute_covariance_matrix` for paired 2D samples.
+  
+  **Time**: 40-60 minutes
+  
+  **Requirements**:
+  - Compute both diagonal (variance) and off-diagonal (covariance) terms
+  - Keep function names and parameter names explicit
+  - Write clear logic in small readable steps
+  - Do not use hidden global state
+</Card>
+
+<Accordion title="Reference Solution">
+```python
+from __future__ import annotations
+
+def compute_covariance_matrix(
+    samples: list[tuple[float, float]],
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    sample_count = len(samples)
+    mean_x = sum(sample[0] for sample in samples) / sample_count
+    mean_y = sum(sample[1] for sample in samples) / sample_count
+    variance_x = sum((sample[0] - mean_x) ** 2 for sample in samples) / sample_count
+    variance_y = sum((sample[1] - mean_y) ** 2 for sample in samples) / sample_count
+    covariance_xy = sum(
+        (sample[0] - mean_x) * (sample[1] - mean_y) for sample in samples
+    ) / sample_count
+    return ((variance_x, covariance_xy), (covariance_xy, variance_y))
+```
+</Accordion>
+
+## Formula to Code Mapping
+
+- Centering maps to subtracting `mean_x` and `mean_y` from each sample
+- Covariance maps to averaging centered products
+- Covariance matrix is symmetric with variances on the diagonal
+
+## Reference Materials
+
+<CardGroup cols={3}>
+  <Card title="Stanford CS336" href="https://cs336.stanford.edu/">
+    Language Modeling from Scratch
+  </Card>
+  <Card title="OpenAI Research" href="https://openai.com/research/">
+    Latest AI Research
+  </Card>
+  <Card title="DeepMind Research" href="https://deepmind.google/research/">
+    Foundational AI Papers
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Read math_walkthrough.md">
+    Reproduce the derivation steps on paper
+  </Step>
+  <Step title="Run toy_example.py">
+    Verify expected metrics match your calculations
+  </Step>
+  <Step title="Implement problem.py">
+    Build the covariance matrix computation from scratch
+  </Step>
+  <Step title="Validate with tests">
+    Unskip exercise tests and run pytest
+  </Step>
+  <Step title="Compare and reflect">
+    Review the reference solution and write a short reflection
+  </Step>
+</Steps>

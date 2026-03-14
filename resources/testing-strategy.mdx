@@ -1,0 +1,607 @@
+---
+title: "Testing Strategy"
+description: "Test categories, execution guide, and best practices"
+---
+
+## Overview
+
+The AI Researcher curriculum uses a comprehensive testing strategy with five distinct categories, each serving a specific purpose in ensuring code quality and pedagogical integrity.
+
+<Note>
+All tests run locally and in CI. No test launches full-scale training or downloads large datasets by default.
+</Note>
+
+## Test Categories
+
+Tests are organized using pytest markers. Each category has specific goals and runtime characteristics.
+
+### Unit Tests
+
+<Accordion title="Fast, isolated function tests">
+  **Marker:** `@pytest.mark.unit`
+  
+  **Purpose:** Verify individual functions and classes in isolation
+  
+  **Characteristics:**
+  - Run in milliseconds
+  - No external dependencies (files, network, GPU)
+  - Pure logic and transformation testing
+  - Deterministic and repeatable
+  
+  **Example:**
+  ```python
+  import pytest
+  import torch
+  from src.embeddings import create_positional_encoding
+  
+  @pytest.mark.unit
+  def test_positional_encoding_shape():
+      """Positional encoding should match sequence length and dimension."""
+      seq_len, embed_dim = 10, 64
+      encoding = create_positional_encoding(seq_len, embed_dim)
+      
+      assert encoding.shape == (seq_len, embed_dim)
+  
+  @pytest.mark.unit
+  def test_positional_encoding_deterministic():
+      """Same inputs should produce same encoding."""
+      encoding_1 = create_positional_encoding(10, 64)
+      encoding_2 = create_positional_encoding(10, 64)
+      
+      assert torch.allclose(encoding_1, encoding_2)
+  ```
+  
+  **Coverage:**
+  - Attention mechanisms
+  - Embedding layers
+  - Layer normalization
+  - Activation functions
+  - Mathematical utilities
+</Accordion>
+
+### Integration Tests
+
+<Accordion title="Tiny deterministic integration tests">
+  **Marker:** `@pytest.mark.integration`
+  
+  **Purpose:** Test component interactions on minimal workloads
+  
+  **Characteristics:**
+  - Run in seconds (less than 30s each)
+  - Use tiny synthetic datasets (less than 1000 samples)
+  - Small models (less than 1M parameters)
+  - Limited training steps (less than 100 iterations)
+  - Verify end-to-end pipelines
+  
+  **Example:**
+  ```python
+  import pytest
+  import torch
+  from src.model import TinyTransformer
+  from src.training import train_one_epoch
+  from src.data import create_synthetic_dataset
+  
+  @pytest.mark.integration
+  def test_training_reduces_loss():
+      """Training loop should reduce loss on synthetic data."""
+      torch.manual_seed(42)
+      
+      # Tiny model and dataset
+      model = TinyTransformer(
+          vocab_size=100,
+          embed_dim=32,
+          num_heads=2,
+          num_layers=2
+      )
+      dataset = create_synthetic_dataset(num_samples=50, seq_len=10)
+      
+      # Measure initial loss
+      initial_loss = evaluate_loss(model, dataset)
+      
+      # Train briefly
+      train_one_epoch(
+          model,
+          dataset,
+          learning_rate=1e-3,
+          num_steps=20
+      )
+      
+      # Verify improvement
+      final_loss = evaluate_loss(model, dataset)
+      assert final_loss < initial_loss * 0.9  # At least 10% improvement
+  ```
+  
+  **Coverage:**
+  - Data loading → tokenization → batching
+  - Model forward pass → loss → backward pass
+  - Training loop → checkpointing
+  - Evaluation pipeline
+</Accordion>
+
+### Pedagogy Tests
+
+<Accordion title="Documentation completeness tests">
+  **Marker:** `@pytest.mark.pedagogy`
+  
+  **Purpose:** Ensure educational materials are complete and valid
+  
+  **Characteristics:**
+  - Verify docstrings exist and are informative
+  - Check example code runs
+  - Validate exercise specifications
+  - Ensure learning objectives are testable
+  
+  **Example:**
+  ```python
+  import pytest
+  import inspect
+  from src.attention import MultiHeadAttention
+  
+  @pytest.mark.pedagogy
+  def test_multihead_attention_has_docstring():
+      """MultiHeadAttention should have comprehensive docstring."""
+      docstring = inspect.getdoc(MultiHeadAttention)
+      
+      assert docstring is not None
+      assert len(docstring) > 100  # Substantive documentation
+      assert "Args:" in docstring or "Parameters:" in docstring
+      assert "Returns:" in docstring
+  
+  @pytest.mark.pedagogy
+  def test_week03_exercises_are_defined():
+      """Week 3 should have all required exercises."""
+      from exercises.week03 import EXERCISES
+      
+      required = [
+          "implement_bpe_tokenizer",
+          "create_embedding_layer",
+          "add_positional_encoding"
+      ]
+      
+      for exercise_name in required:
+          assert exercise_name in EXERCISES
+          assert EXERCISES[exercise_name]["description"]
+          assert EXERCISES[exercise_name]["test_func"]
+  ```
+  
+  **Coverage:**
+  - All public functions have docstrings
+  - Exercise notebooks run without errors
+  - README examples are valid
+  - Learning objective tests exist
+</Accordion>
+
+### Safety Tests
+
+<Accordion title="Runtime safety checks">
+  **Marker:** `@pytest.mark.safety`
+  
+  **Purpose:** Ensure code doesn't violate safety constraints
+  
+  **Characteristics:**
+  - Verify no accidental large downloads
+  - Check no full-scale training in tests
+  - Validate configuration defaults are safe
+  - Ensure resource limits are respected
+  
+  **Example:**
+  ```python
+  import pytest
+  from src.config import DEFAULT_CONFIG
+  from src.data import DataLoader
+  
+  @pytest.mark.safety
+  def test_default_config_uses_toy_dataset():
+      """Default configuration should never use large datasets."""
+      assert DEFAULT_CONFIG.dataset_name in [
+          "synthetic",
+          "tiny_shakespeare",
+          "wikitext2"
+      ]
+      assert DEFAULT_CONFIG.max_samples <= 10000
+  
+  @pytest.mark.safety
+  def test_data_loader_respects_size_limit():
+      """DataLoader should enforce max dataset size."""
+      loader = DataLoader(
+          dataset_name="synthetic",
+          max_samples=100
+      )
+      
+      total_samples = sum(1 for _ in loader)
+      assert total_samples <= 100
+  
+  @pytest.mark.safety
+  def test_no_network_calls_in_default_tests():
+      """Tests should not make network calls by default."""
+      import socket
+      
+      # This would be part of a pytest plugin or conftest.py
+      # to monitor network activity during test runs
+      # Simplified example:
+      def mock_network_guard(*args, **kwargs):
+          raise RuntimeError("Network call detected in test!")
+      
+      # Temporarily replace socket functions
+      original_socket = socket.socket
+      socket.socket = mock_network_guard
+      
+      try:
+          # Run a test that should be fully local
+          from tests.test_tokenizer import test_bpe_encoding
+          test_bpe_encoding()
+      finally:
+          socket.socket = original_socket
+  ```
+  
+  **Coverage:**
+  - Configuration defaults
+  - Resource usage limits
+  - No accidental network/disk operations
+  - Error handling for invalid inputs
+</Accordion>
+
+### Exercise Tests
+
+<Accordion title="Learner-facing challenge tests (skipped by default)">
+  **Marker:** `@pytest.mark.exercise`
+  
+  **Purpose:** Tests for learner implementations of exercises
+  
+  **Characteristics:**
+  - Skipped by default (learners haven't implemented yet)
+  - Enabled with `pytest -m exercise`
+  - Validate learner solutions
+  - Provide immediate feedback
+  
+  **Example:**
+  ```python
+  import pytest
+  import torch
+  
+  @pytest.mark.exercise
+  def test_learner_attention_implementation():
+      """Test learner's attention implementation (Week 4 exercise)."""
+      # This test is skipped by default because learners
+      # haven't implemented it yet
+      
+      try:
+          from exercises.week04.solution import compute_attention
+      except ImportError:
+          pytest.skip("Learner hasn't implemented compute_attention yet")
+      
+      # Test the learner's implementation
+      query = torch.randn(2, 10, 64)
+      key = torch.randn(2, 10, 64)
+      value = torch.randn(2, 10, 64)
+      
+      output = compute_attention(query, key, value)
+      
+      # Verify correctness
+      assert output.shape == query.shape
+      assert torch.isfinite(output).all()
+      
+      # Verify attention properties
+      # (e.g., output is in convex hull of values)
+  
+  @pytest.mark.exercise
+  def test_learner_transformer_layer():
+      """Test learner's transformer layer (Week 5 exercise)."""
+      try:
+          from exercises.week05.solution import TransformerLayer
+      except ImportError:
+          pytest.skip("Learner hasn't implemented TransformerLayer yet")
+      
+      layer = TransformerLayer(embed_dim=64, num_heads=4)
+      input_tensor = torch.randn(2, 10, 64)
+      output = layer(input_tensor)
+      
+      assert output.shape == input_tensor.shape
+  ```
+  
+  **Usage:**
+  ```bash
+  # Learners run this to check their solutions
+  pytest -m exercise
+  
+  # Or specific exercise
+  pytest tests/exercises/test_week04.py -m exercise
+  ```
+</Accordion>
+
+## Running Tests
+
+### Quick Quality Check (Default)
+
+```bash
+# Run fast tests only (unit + pedagogy + safety)
+make run-checks
+
+# Or directly with pytest
+pytest -m "unit or pedagogy or safety"
+```
+
+**Expected runtime:** < 30 seconds
+
+### Full Test Suite
+
+```bash
+# Include integration tests
+make test-integration
+
+# Or directly
+pytest -m "unit or integration or pedagogy or safety"
+```
+
+**Expected runtime:** 1-3 minutes
+
+### Exercise Validation (Learners)
+
+```bash
+# Check your exercise solutions
+pytest -m exercise
+
+# Check specific week
+pytest tests/exercises/test_week04.py -m exercise
+```
+
+### Selective Test Execution
+
+```bash
+# Only unit tests
+pytest -m unit
+
+# Only integration tests
+pytest -m integration
+
+# Everything except exercises
+pytest -m "not exercise"
+
+# Specific test file
+pytest tests/test_attention.py
+
+# Specific test function
+pytest tests/test_attention.py::test_attention_output_shape
+```
+
+### With Coverage
+
+```bash
+# Generate coverage report
+pytest --cov=src --cov-report=html
+
+# View in browser
+open htmlcov/index.html
+```
+
+## Test Structure Best Practices
+
+### Arrange-Act-Assert Pattern
+
+```python
+@pytest.mark.unit
+def test_layer_norm_normalizes_mean_and_variance():
+    # ARRANGE: Set up test inputs
+    input_tensor = torch.randn(2, 10, 64)  # [batch, seq, dim]
+    layer_norm = LayerNorm(normalized_shape=64)
+    
+    # ACT: Execute the function under test
+    output = layer_norm(input_tensor)
+    
+    # ASSERT: Verify expected outcomes
+    assert output.shape == input_tensor.shape
+    assert torch.allclose(output.mean(dim=-1), torch.zeros(2, 10), atol=1e-5)
+    assert torch.allclose(output.std(dim=-1), torch.ones(2, 10), atol=1e-5)
+```
+
+### Fixtures for Reusable Setup
+
+```python
+import pytest
+import torch
+
+@pytest.fixture
+def tiny_transformer():
+    """Fixture providing a tiny transformer for testing."""
+    return TinyTransformer(
+        vocab_size=100,
+        embed_dim=32,
+        num_heads=2,
+        num_layers=2
+    )
+
+@pytest.fixture
+def synthetic_batch():
+    """Fixture providing a synthetic batch of data."""
+    return {
+        "input_ids": torch.randint(0, 100, (4, 10)),  # [batch, seq]
+        "target_ids": torch.randint(0, 100, (4, 10)),
+    }
+
+@pytest.mark.unit
+def test_transformer_forward_pass(tiny_transformer, synthetic_batch):
+    """Transformer should process batch without errors."""
+    output = tiny_transformer(synthetic_batch["input_ids"])
+    assert output.shape == (*synthetic_batch["input_ids"].shape, 100)
+```
+
+### Parametrized Tests for Multiple Cases
+
+```python
+@pytest.mark.unit
+@pytest.mark.parametrize("seq_len,embed_dim", [
+    (10, 64),
+    (20, 128),
+    (5, 32),
+    (1, 512),
+])
+def test_positional_encoding_various_sizes(seq_len, embed_dim):
+    """Positional encoding should work for various dimensions."""
+    encoding = create_positional_encoding(seq_len, embed_dim)
+    assert encoding.shape == (seq_len, embed_dim)
+
+@pytest.mark.unit
+@pytest.mark.parametrize("num_heads,embed_dim", [
+    (1, 64),
+    (2, 64),
+    (4, 64),
+    (8, 128),
+])
+def test_multihead_attention_head_counts(num_heads, embed_dim):
+    """Multi-head attention should work with various head counts."""
+    attention = MultiHeadAttention(embed_dim, num_heads)
+    query = torch.randn(2, 10, embed_dim)
+    output = attention(query, query, query)
+    assert output.shape == query.shape
+```
+
+## CI/CD Integration
+
+Tests run automatically on GitHub Actions:
+
+### Fast Checks Workflow
+
+```yaml
+# .github/workflows/fast-checks.yml
+name: Fast Checks
+
+on: [push, pull_request]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv sync --extra dev
+      
+      - name: Lint with ruff
+        run: ruff check src/ tests/
+      
+      - name: Type check with mypy
+        run: mypy src/
+      
+      - name: Run fast tests
+        run: pytest -m "unit or pedagogy or safety"
+```
+
+**Runs on:** Every push and PR
+
+**Duration:** ~1 minute
+
+### Integration Tests (Optional)
+
+```bash
+# Can be run manually or on milestone branches
+make test-integration
+```
+
+## Debugging Failed Tests
+
+### Verbose Output
+
+```bash
+# Show print statements and full diffs
+pytest -vv -s
+
+# Show local variables on failure
+pytest --showlocals
+
+# Drop into debugger on failure
+pytest --pdb
+```
+
+### Isolate Failures
+
+```bash
+# Run only failed tests from last run
+pytest --lf
+
+# Run failed tests first, then others
+pytest --ff
+
+# Stop after first failure
+pytest -x
+```
+
+## Test Coverage Goals
+
+<CardGroup cols={2}>
+  <Card title="Core Logic">
+    **Target: 95%+**
+    
+    Attention, embeddings, layers, transformations
+  </Card>
+  <Card title="Training Code">
+    **Target: 85%+**
+    
+    Training loops, optimization, checkpointing
+  </Card>
+  <Card title="Data Loading">
+    **Target: 80%+**
+    
+    Tokenization, batching, data pipelines
+  </Card>
+  <Card title="Utilities">
+    **Target: 90%+**
+    
+    Config parsing, logging, helpers
+  </Card>
+</CardGroup>
+
+## Writing New Tests
+
+When adding new functionality:
+
+1. **Write tests first (TDD):**
+   ```python
+   # tests/test_new_feature.py
+   @pytest.mark.unit
+   def test_new_feature_basic_case():
+       # This will fail initially
+       result = new_feature(input_data)
+       assert result == expected_output
+   ```
+
+2. **Run test to see it fail:**
+   ```bash
+   pytest tests/test_new_feature.py -v
+   ```
+
+3. **Implement feature until test passes**
+
+4. **Add edge case tests:**
+   ```python
+   @pytest.mark.unit
+   def test_new_feature_empty_input():
+       ...
+   
+   @pytest.mark.unit
+   def test_new_feature_large_input():
+       ...
+   ```
+
+5. **Verify coverage:**
+   ```bash
+   pytest --cov=src.new_module tests/test_new_feature.py
+   ```
+
+## Summary
+
+<Note>
+**Testing Philosophy:**
+
+- **Unit tests:** Fast, isolated, comprehensive
+- **Integration tests:** Realistic, but tiny and deterministic
+- **Pedagogy tests:** Documentation is code too
+- **Safety tests:** Prevent accidents and resource waste
+- **Exercise tests:** Enable learner self-assessment
+
+Every feature needs tests. Every test must be fast. Every test must be deterministic.
+</Note>

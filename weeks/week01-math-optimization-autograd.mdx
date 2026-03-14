@@ -1,0 +1,150 @@
+---
+title: "Week 01: Math, Optimization, and Autograd"
+description: "Use gradient descent intuition to understand how learning updates move parameters toward lower loss"
+---
+
+## Module Focus
+
+Use gradient descent intuition to understand how learning updates move parameters toward lower loss.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Explain and derive the core formula">
+    Understand the core formula `L(theta) = (theta - 3)^2` in plain language and derive the gradient update rule.
+  </Step>
+  <Step title="Translate formula to code">
+    Convert mathematical concepts into readable, testable Python code.
+  </Step>
+  <Step title="Solve the coding challenge">
+    Complete the focused coding challenge in 30-60 minutes.
+  </Step>
+</Steps>
+
+## Core Formula
+
+```
+L(theta) = (theta - 3)^2
+```
+
+## Mathematical Intuition
+
+A parameter that starts far from the optimum can be moved in small, consistent steps using gradient information.
+
+<Accordion title="Symbol Glossary">
+  - **theta**: scalar model parameter
+  - **eta**: learning rate controlling update size
+  - **dL/dtheta**: slope of the loss surface
+  - **L**: scalar loss value
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Compute the derivative">
+    ```
+    dL/dtheta = 2 * (theta - 3)
+    ```
+  </Step>
+  <Step title="Apply the update rule">
+    ```
+    theta_next = theta - eta * dL/dtheta
+    ```
+  </Step>
+  <Step title="Iterate and observe">
+    Repeat updates and observe monotonic loss reduction for stable learning rates.
+  </Step>
+</Steps>
+
+## Toy Example Walkthrough
+
+1. Start with `theta = 8.0`, `eta = 0.25`
+2. After 1 step, `theta = 5.5`
+3. After 4 steps, `theta = 3.3125` and loss is very small
+
+### Implementation
+
+```python
+from __future__ import annotations
+
+def run_toy_example() -> dict[str, float]:
+    parameter_value = 8.0
+    learning_rate = 0.25
+    for _ in range(4):
+        gradient_value = 2.0 * (parameter_value - 3.0)
+        parameter_value = parameter_value - learning_rate * gradient_value
+    loss_value = (parameter_value - 3.0) ** 2
+    return {
+        "primary_metric": parameter_value,
+        "secondary_metric": loss_value,
+    }
+```
+
+## Coding Challenge
+
+<Card title="Implement Gradient Descent Runner">
+  **Goal**: Implement `run_gradient_descent` for a quadratic objective centered at 3.0.
+  
+  **Time**: 30-45 minutes
+  
+  **Requirements**:
+  - Keep function names and parameter names explicit
+  - Write clear logic in small readable steps
+  - Do not use hidden global state
+</Card>
+
+<Accordion title="Reference Solution">
+```python
+from __future__ import annotations
+
+def run_gradient_descent(
+    initial_parameter: float,
+    learning_rate: float,
+    step_count: int,
+) -> float:
+    parameter_value = initial_parameter
+    for _ in range(step_count):
+        gradient_value = 2.0 * (parameter_value - 3.0)
+        parameter_value = parameter_value - learning_rate * gradient_value
+    return parameter_value
+```
+</Accordion>
+
+## Formula to Code Mapping
+
+- Gradient expression maps to `gradient_value = 2.0 * (parameter_value - 3.0)`
+- Parameter update maps to `parameter_value -= learning_rate * gradient_value`
+
+## Reference Materials
+
+<CardGroup cols={3}>
+  <Card title="Stanford CS336" href="https://cs336.stanford.edu/">
+    Language Modeling from Scratch
+  </Card>
+  <Card title="OpenAI Research" href="https://openai.com/research/">
+    Latest AI Research
+  </Card>
+  <Card title="DeepMind Research" href="https://deepmind.google/research/">
+    Foundational AI Papers
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Read math_walkthrough.md">
+    Reproduce derivation steps on paper
+  </Step>
+  <Step title="Run toy_example.py">
+    Verify expected metrics match your calculations
+  </Step>
+  <Step title="Implement problem.py">
+    Build the gradient descent runner from scratch
+  </Step>
+  <Step title="Validate with tests">
+    Unskip exercise tests and run pytest
+  </Step>
+  <Step title="Compare and reflect">
+    Review the reference solution and write a short reflection
+  </Step>
+</Steps>

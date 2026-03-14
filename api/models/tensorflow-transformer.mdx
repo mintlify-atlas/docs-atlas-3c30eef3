@@ -1,0 +1,540 @@
+---
+title: 'TensorFlow Transformer'
+description: 'Graph-based scaled dot-product attention implementation in TensorFlow'
+icon: 'diagram-project'
+---
+
+## Overview
+
+The TensorFlow implementation provides a **graph-based** scaled dot-product attention mechanism. Like the JAX version, this is a low-level building block rather than a complete model, demonstrating TensorFlow's computational graph approach.
+
+<Note>
+  This implementation focuses on the **core attention mechanism** only. It's designed for production deployments and integration with existing TensorFlow pipelines.
+</Note>
+
+## Function Definition
+
+### scaled_dot_product_attention_tensorflow
+
+```python
+def scaled_dot_product_attention_tensorflow(
+    query_matrix: Any,
+    key_matrix: Any,
+    value_matrix: Any,
+) -> Any:
+```
+
+Computes scaled dot-product attention using TensorFlow operations.
+
+**Source**: `ai_researcher_repo/models/transformer_tensorflow.py:14`
+
+## Parameters
+
+<ParamField path="query_matrix" type="tf.Tensor" required>
+  Query matrix from the attention mechanism
+  
+  **Shape**: `(..., seq_len_q, key_dim)`
+  
+  **Dtype**: Typically `tf.float32`
+  
+  Can have arbitrary leading batch dimensions
+</ParamField>
+
+<ParamField path="key_matrix" type="tf.Tensor" required>
+  Key matrix from the attention mechanism
+  
+  **Shape**: `(..., seq_len_k, key_dim)`
+  
+  **Dtype**: Must match `query_matrix`
+  
+  The `key_dim` must match the last dimension of `query_matrix`
+</ParamField>
+
+<ParamField path="value_matrix" type="tf.Tensor" required>
+  Value matrix from the attention mechanism
+  
+  **Shape**: `(..., seq_len_k, value_dim)`
+  
+  **Dtype**: Must match `query_matrix`
+  
+  The sequence length must match `key_matrix`
+</ParamField>
+
+## Returns
+
+<ResponseField name="output" type="tf.Tensor">
+  Attention-weighted values
+  
+  **Shape**: `(..., seq_len_q, value_dim)`
+  
+  **Dtype**: Same as input tensors
+  
+  The output has the same batch dimensions and query sequence length as the input, with the value dimension from `value_matrix`
+</ResponseField>
+
+## Algorithm Implementation
+
+The function implements the standard scaled dot-product attention formula:
+
+$$
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+$$
+
+### Step-by-Step Breakdown
+
+```python
+# 1. Extract key dimension for scaling
+key_dimension = query_matrix.shape[-1]
+scaling_factor = 1.0 / math.sqrt(float(key_dimension))
+```
+
+The scaling factor is $\frac{1}{\sqrt{d_k}}$ where $d_k$ is the key dimension. Note the explicit `float()` conversion for TensorFlow compatibility.
+
+```python
+# 2. Compute attention scores (Q @ K^T)
+attention_scores = tensorflow_module.matmul(
+    query_matrix,
+    key_matrix,
+    transpose_b=True
+)
+```
+
+Computes the dot product between queries and keys. The `transpose_b=True` parameter transposes the key matrix before multiplication.
+
+```python
+# 3. Scale the scores
+scaled_scores = attention_scores * scaling_factor
+```
+
+Applies the $\frac{1}{\sqrt{d_k}}$ scaling to prevent gradients from vanishing.
+
+```python
+# 4. Compute attention weights (softmax)
+attention_weights = tensorflow_module.nn.softmax(scaled_scores, axis=-1)
+```
+
+**Production-grade softmax** using TensorFlow's built-in numerically stable implementation.
+
+<Info>
+  Unlike the JAX implementation, this uses `tf.nn.softmax` which is numerically stable and prevents overflow/underflow issues.
+</Info>
+
+```python
+# 5. Apply attention weights to values
+return tensorflow_module.matmul(attention_weights, value_matrix)
+```
+
+Multiplies the attention weights by the value matrix to produce the final output.
+
+## Usage Examples
+
+### Basic Attention Computation
+
+```python
+import tensorflow as tf
+from ai_researcher_repo.models.transformer_tensorflow import (
+    scaled_dot_product_attention_tensorflow
+)
+
+# Create sample inputs
+batch_size = 2
+seq_len = 10
+key_dim = 64
+value_dim = 64
+
+query = tf.ones((batch_size, seq_len, key_dim))
+key = tf.ones((batch_size, seq_len, key_dim))
+value = tf.ones((batch_size, seq_len, value_dim))
+
+# Compute attention
+output = scaled_dot_product_attention_tensorflow(query, key, value)
+print(f"Output shape: {output.shape}")  # (2, 10, 64)
+```
+
+### Keras Layer Integration
+
+```python
+import tensorflow as tf
+from ai_researcher_repo.models.transformer_tensorflow import (
+    scaled_dot_product_attention_tensorflow
+)
+
+class MultiHeadAttention(tf.keras.layers.Layer):
+    def __init__(self, model_dim, num_heads):
+        super().__init__()
+        self.num_heads = num_heads
+        self.model_dim = model_dim
+        
+        assert model_dim % num_heads == 0
+        self.head_dim = model_dim // num_heads
+        
+        # Projection layers
+        self.W_q = tf.keras.layers.Dense(model_dim)
+        self.W_k = tf.keras.layers.Dense(model_dim)
+        self.W_v = tf.keras.layers.Dense(model_dim)
+        self.W_o = tf.keras.layers.Dense(model_dim)
+    
+    def split_heads(self, x, batch_size):
+        """Split the last dimension into (num_heads, head_dim)."""
+        x = tf.reshape(x, (batch_size, -1, self.num_heads, self.head_dim))
+        return tf.transpose(x, perm=[0, 2, 1, 3])
+    
+    def call(self, query, key, value):
+        batch_size = tf.shape(query)[0]
+        
+        # Linear projections
+        q = self.W_q(query)  # (batch, seq_len, model_dim)
+        k = self.W_k(key)
+        v = self.W_v(value)
+        
+        # Split into multiple heads
+        q = self.split_heads(q, batch_size)  # (batch, num_heads, seq_len, head_dim)
+        k = self.split_heads(k, batch_size)
+        v = self.split_heads(v, batch_size)
+        
+        # Apply attention to each head
+        attention_output = scaled_dot_product_attention_tensorflow(q, k, v)
+        # Output: (batch, num_heads, seq_len_q, head_dim)
+        
+        # Concatenate heads
+        attention_output = tf.transpose(attention_output, perm=[0, 2, 1, 3])
+        concat_attention = tf.reshape(
+            attention_output,
+            (batch_size, -1, self.model_dim)
+        )
+        
+        # Final projection
+        return self.W_o(concat_attention)
+
+# Usage
+attention_layer = MultiHeadAttention(model_dim=128, num_heads=8)
+x = tf.random.normal((4, 20, 128))  # (batch=4, seq_len=20, dim=128)
+output = attention_layer(x, x, x)
+print(f"Multi-head attention output: {output.shape}")  # (4, 20, 128)
+```
+
+### Graph Execution with tf.function
+
+```python
+import tensorflow as tf
+from ai_researcher_repo.models.transformer_tensorflow import (
+    scaled_dot_product_attention_tensorflow
+)
+
+# Decorate for graph compilation
+@tf.function
+def attention_forward(q, k, v):
+    return scaled_dot_product_attention_tensorflow(q, k, v)
+
+# Create inputs
+query = tf.random.normal((2, 10, 64))
+key = tf.random.normal((2, 10, 64))
+value = tf.random.normal((2, 10, 64))
+
+# First call: traces and compiles the graph
+output1 = attention_forward(query, key, value)  # Slower (compilation)
+
+# Subsequent calls: uses cached graph
+output2 = attention_forward(query, key, value)  # Faster
+
+print(f"Graph execution output: {output2.shape}")
+```
+
+### Cross-Attention Example
+
+```python
+import tensorflow as tf
+from ai_researcher_repo.models.transformer_tensorflow import (
+    scaled_dot_product_attention_tensorflow
+)
+
+# Encoder-decoder cross-attention
+batch_size = 2
+encoder_seq_len = 15
+decoder_seq_len = 10
+hidden_dim = 64
+
+# Query from decoder
+query = tf.random.normal((batch_size, decoder_seq_len, hidden_dim))
+
+# Key and value from encoder
+key = tf.random.normal((batch_size, encoder_seq_len, hidden_dim))
+value = tf.random.normal((batch_size, encoder_seq_len, hidden_dim))
+
+# Decoder attends to encoder outputs
+output = scaled_dot_product_attention_tensorflow(query, key, value)
+print(f"Cross-attention output: {output.shape}")  # (2, 10, 64)
+```
+
+### Training with GradientTape
+
+```python
+import tensorflow as tf
+from ai_researcher_repo.models.transformer_tensorflow import (
+    scaled_dot_product_attention_tensorflow
+)
+
+# Simple attention layer with trainable weights
+class AttentionLayer(tf.keras.Model):
+    def __init__(self, dim):
+        super().__init__()
+        self.W_q = tf.Variable(tf.random.normal((dim, dim)) * 0.02)
+        self.W_k = tf.Variable(tf.random.normal((dim, dim)) * 0.02)
+        self.W_v = tf.Variable(tf.random.normal((dim, dim)) * 0.02)
+    
+    def call(self, x):
+        q = tf.matmul(x, self.W_q)
+        k = tf.matmul(x, self.W_k)
+        v = tf.matmul(x, self.W_v)
+        return scaled_dot_product_attention_tensorflow(q, k, v)
+
+# Initialize
+model = AttentionLayer(dim=32)
+x = tf.random.normal((5, 32))  # 5 tokens
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+
+# Training step
+with tf.GradientTape() as tape:
+    output = model(x)
+    loss = tf.reduce_sum(output ** 2)
+
+# Compute and apply gradients
+grads = tape.gradient(loss, model.trainable_variables)
+optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
+print(f"Loss: {loss.numpy():.4f}")
+print(f"Trainable variables: {len(model.trainable_variables)}")
+```
+
+## Design Considerations
+
+### TensorFlow-Specific Operations
+
+The implementation uses TensorFlow's `matmul` with `transpose_b` parameter:
+
+```python
+attention_scores = tensorflow_module.matmul(
+    query_matrix,
+    key_matrix,
+    transpose_b=True  # Transpose key before multiplication
+)
+```
+
+This is more efficient than manually transposing:
+
+```python
+# Less efficient alternative
+key_transposed = tf.transpose(key_matrix, perm=[0, 2, 1])
+attention_scores = tf.matmul(query_matrix, key_transposed)
+```
+
+### Numerically Stable Softmax
+
+Unlike JAX, this uses TensorFlow's production-grade softmax:
+
+```python
+attention_weights = tensorflow_module.nn.softmax(scaled_scores, axis=-1)
+```
+
+This automatically handles numerical stability using the log-sum-exp trick internally.
+
+### Type Casting
+
+The key dimension is explicitly cast to `float`:
+
+```python
+scaling_factor = 1.0 / math.sqrt(float(key_dimension))
+```
+
+This ensures compatibility with TensorFlow's type system when `key_dimension` might be a symbolic tensor dimension.
+
+### Graph vs Eager Execution
+
+The function works in both modes:
+
+- **Eager mode** (default in TF 2.x): Immediate execution
+- **Graph mode** (with `@tf.function`): Compiled computation graph
+
+```python
+# Eager execution
+output = scaled_dot_product_attention_tensorflow(q, k, v)
+
+# Graph execution (compiled)
+@tf.function
+def attention_graph(q, k, v):
+    return scaled_dot_product_attention_tensorflow(q, k, v)
+
+output = attention_graph(q, k, v)  # Uses compiled graph
+```
+
+## Comparison with JAX
+
+| Aspect | TensorFlow Implementation | JAX Implementation |
+|--------|---------------------------|--------------------|
+| **Softmax** | `tf.nn.softmax` (stable) | Manual exp + normalize |
+| **Transpose** | `transpose_b=True` | `swapaxes(-1, -2)` |
+| **Execution** | Eager or graph mode | Pure functions + JIT |
+| **Type Safety** | Explicit `float()` cast | Implicit casting |
+| **Best For** | Production deployment | Research code |
+
+### Code Comparison
+
+<CodeGroup>
+```python TensorFlow
+attention_scores = tf.matmul(query_matrix, key_matrix, transpose_b=True)
+scaled_scores = attention_scores * scaling_factor
+attention_weights = tf.nn.softmax(scaled_scores, axis=-1)
+```
+
+```python JAX
+attention_scores = jnp.matmul(query_matrix, jnp.swapaxes(key_matrix, -1, -2))
+scaled_scores = attention_scores * scaling_factor
+attention_weights = jnp.exp(scaled_scores)
+attention_weights = attention_weights / attention_weights.sum(axis=-1, keepdims=True)
+```
+</CodeGroup>
+
+## Error Handling
+
+### Import Validation
+
+The function raises an error if TensorFlow is not installed:
+
+```python
+if tensorflow_module is None:
+    raise ImportError(
+        "TensorFlow is not installed. Install optional dependency group `tensorflow`."
+    )
+```
+
+**Install TensorFlow**:
+```bash
+pip install tensorflow
+# or
+pip install ai_researcher_repo[tensorflow]
+```
+
+### Shape Validation
+
+TensorFlow will raise errors if shapes are incompatible:
+
+```python
+# This will fail: key_dim mismatch
+query = tf.ones((2, 10, 64))
+key = tf.ones((2, 10, 32))  # Different last dimension!
+value = tf.ones((2, 10, 64))
+
+scaled_dot_product_attention_tensorflow(query, key, value)
+# InvalidArgumentError: Matrix size-incompatible
+```
+
+## Performance Optimization
+
+### Graph Compilation
+
+For best performance, use `@tf.function` to compile the attention computation:
+
+```python
+import tensorflow as tf
+from ai_researcher_repo.models.transformer_tensorflow import (
+    scaled_dot_product_attention_tensorflow
+)
+
+@tf.function(jit_compile=True)  # XLA compilation
+def optimized_attention(q, k, v):
+    return scaled_dot_product_attention_tensorflow(q, k, v)
+
+# First call: compilation
+output = optimized_attention(query, key, value)  # Slow
+
+# Subsequent calls: fast!
+output = optimized_attention(query, key, value)  # Fast
+```
+
+### Mixed Precision
+
+For GPU training, use mixed precision:
+
+```python
+import tensorflow as tf
+from tensorflow.keras.mixed_precision import Policy
+
+# Enable mixed precision
+policy = Policy('mixed_float16')
+tf.keras.mixed_precision.set_global_policy(policy)
+
+# Attention will automatically use float16 for computation
+query = tf.random.normal((2, 10, 64), dtype=tf.float16)
+key = tf.random.normal((2, 10, 64), dtype=tf.float16)
+value = tf.random.normal((2, 10, 64), dtype=tf.float16)
+
+output = scaled_dot_product_attention_tensorflow(query, key, value)
+print(f"Output dtype: {output.dtype}")  # float16
+```
+
+### Memory Optimization
+
+For long sequences, use gradient checkpointing:
+
+```python
+import tensorflow as tf
+
+@tf.function
+def checkpointed_attention(q, k, v):
+    @tf.recompute_grad
+    def _attention(q, k, v):
+        return scaled_dot_product_attention_tensorflow(q, k, v)
+    return _attention(q, k, v)
+
+# Uses less memory during backprop by recomputing forward pass
+output = checkpointed_attention(query, key, value)
+```
+
+## Deployment
+
+### SavedModel Export
+
+```python
+import tensorflow as tf
+from ai_researcher_repo.models.transformer_tensorflow import (
+    scaled_dot_product_attention_tensorflow
+)
+
+class AttentionModel(tf.Module):
+    @tf.function(input_signature=[
+        tf.TensorSpec(shape=[None, None, 64], dtype=tf.float32),
+        tf.TensorSpec(shape=[None, None, 64], dtype=tf.float32),
+        tf.TensorSpec(shape=[None, None, 64], dtype=tf.float32),
+    ])
+    def __call__(self, q, k, v):
+        return scaled_dot_product_attention_tensorflow(q, k, v)
+
+# Export model
+model = AttentionModel()
+tf.saved_model.save(model, "attention_model")
+
+# Load and use
+loaded = tf.saved_model.load("attention_model")
+output = loaded(query, key, value)
+```
+
+### TensorFlow Serving
+
+The exported model can be served with TensorFlow Serving for production inference.
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="PyTorch Transformer" href="/api/models/pytorch-transformer">
+    Complete transformer model
+  </Card>
+  <Card title="JAX Transformer" href="/api/models/jax-transformer">
+    Functional JAX attention
+  </Card>
+  <Card title="Models Overview" href="/api/models/overview">
+    Framework comparison
+  </Card>
+  <Card title="TensorFlow Docs" href="https://www.tensorflow.org/api_docs">
+    Official TensorFlow API
+  </Card>
+</CardGroup>

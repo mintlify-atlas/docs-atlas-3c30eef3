@@ -1,0 +1,212 @@
+---
+title: LLM Systems
+description: Design, train, evaluate, and iterate language models with engineering rigor
+---
+
+# Realm: LLM Systems
+
+Master the full lifecycle of language model development, from tokenization and architecture design to training, evaluation, and iteration.
+
+## Core Goal
+
+Design, train, evaluate, and iterate language models with strong engineering rigor. You'll learn to make principled decisions about model architecture, training procedures, and evaluation strategies while building production-quality systems.
+
+## Prerequisites
+
+Before starting this realm, complete:
+
+- **Weeks 1-8**: Mathematical foundations, transformers, training loops, scaling laws
+- **Week 10**: Evaluation and benchmarks
+
+Recommended: Weeks 11-12 (Alignment and Interpretability) for more advanced projects.
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="Stanford CS336" href="https://cs336.stanford.edu/">
+    Language modeling from scratch course
+  </Card>
+  
+  <Card title="Stanford CS224N" href="https://web.stanford.edu/class/cs224n/">
+    Natural language processing with deep learning
+  </Card>
+  
+  <Card title="nanoGPT" href="https://github.com/karpathy/nanoGPT">
+    Minimal GPT implementation by Andrej Karpathy
+  </Card>
+  
+  <Card title="GPT-3 Paper" href="https://arxiv.org/abs/2005.14165">
+    Language Models are Few-Shot Learners
+  </Card>
+  
+  <Card title="Chinchilla Scaling" href="https://arxiv.org/abs/2203.15556">
+    Optimal model size and training compute
+  </Card>
+</CardGroup>
+
+## Project Ladder
+
+Progress through three tiers of increasing complexity:
+
+### Short Project (1-2 days)
+
+**Goal**: Implement tokenizer + tiny decoder-only model on toy text
+
+<Steps>
+  <Step title="Build Character-Level Tokenizer">
+    Implement vocabulary building and encoding functions. Test on toy corpus.
+  </Step>
+  
+  <Step title="Create Minimal Decoder">
+    Build a tiny transformer decoder (2 layers, 64 hidden dim, 2 heads). Use existing transformer blocks from the codebase.
+  </Step>
+  
+  <Step title="Train on Toy Data">
+    Generate synthetic text or use Tiny Shakespeare. Train for 100 steps and verify loss decreases.
+  </Step>
+  
+  <Step title="Generate Samples">
+    Implement autoregressive sampling. Generate text and inspect quality.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Working tokenizer with tests
+- Trainable decoder-only model
+- Training script with loss curves
+- Sample generations
+
+### Medium Project (3-7 days)
+
+**Goal**: Add checkpointing, evaluation metrics, and ablation toggles
+
+<Steps>
+  <Step title="Implement Checkpointing">
+    Save model state, optimizer state, and training config. Add resume functionality.
+  </Step>
+  
+  <Step title="Add Evaluation Suite">
+    Implement perplexity, loss on held-out set, and sample diversity metrics.
+  </Step>
+  
+  <Step title="Create Ablation Framework">
+    Add toggles for positional encoding type, normalization strategy, activation function. Log all hyperparameters.
+  </Step>
+  
+  <Step title="Run Controlled Experiments">
+    Compare 2-3 architectural choices (e.g., learned vs. sinusoidal positions). Plot results with error bars.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Checkpoint save/load system
+- Comprehensive evaluation metrics
+- Ablation configuration system
+- Experiment report with plots and analysis
+
+### Deep Project (1-2 weeks)
+
+**Goal**: Compare scaling curves across model sizes and token budgets
+
+<Steps>
+  <Step title="Design Scaling Experiment">
+    Choose 3-4 model sizes (e.g., 1M, 5M, 25M, 100M params). Define fixed compute budget and data splits.
+  </Step>
+  
+  <Step title="Implement Efficient Training">
+    Optimize data loading, use gradient accumulation, enable mixed precision. Target throughput measurements.
+  </Step>
+  
+  <Step title="Run Full Sweep">
+    Train all models to convergence. Track loss, perplexity, throughput, and memory usage.
+  </Step>
+  
+  <Step title="Analyze Scaling Behavior">
+    Fit power-law curves to your results. Compare to Chinchilla findings. Document deviations.
+  </Step>
+  
+  <Step title="Write Technical Report">
+    Document methodology, results, tradeoffs, and recommendations for future work.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Scaling curve plots with fitted power laws
+- Throughput and efficiency analysis
+- Technical report following research standards
+- Open questions and future directions
+
+## Acceptance Criteria
+
+Your work meets professional standards if:
+
+<AccordionGroup>
+  <Accordion title="Reproducible Training Scripts">
+    - All hyperparameters are configurable and logged
+    - Random seeds are set and documented
+    - Training can be resumed from checkpoints
+    - Environment and dependencies are specified
+    - README includes exact commands to reproduce results
+  </Accordion>
+  
+  <Accordion title="Clear Evaluation Report">
+    - Metrics are defined and justified
+    - Results include mean and standard deviation across seeds
+    - Plots have clear labels, legends, and captions
+    - Statistical significance is assessed where appropriate
+    - Failure modes are documented and analyzed
+  </Accordion>
+  
+  <Accordion title="Source-Backed Architectural Decisions">
+    - Each design choice references a paper or authoritative source
+    - Deviations from standard practices are justified
+    - Tradeoffs are explicitly stated
+    - Alternative approaches are considered and documented
+  </Accordion>
+</AccordionGroup>
+
+## Key Concepts to Master
+
+- **Tokenization**: BPE, WordPiece, SentencePiece, vocabulary size tradeoffs
+- **Architecture**: Layer normalization placement, learned vs. fixed positions, attention patterns
+- **Training**: Learning rate schedules, gradient clipping, warmup, weight decay
+- **Evaluation**: Perplexity, sample quality, downstream task performance
+- **Scaling**: Compute-optimal model sizing, data requirements, inference costs
+
+## Common Pitfalls
+
+<Warning>
+**Avoid these mistakes:**
+
+- Training without validation set (leads to overfitting)
+- Ignoring numerical stability (NaN losses)
+- Comparing models with different training budgets
+- Cherry-picking samples (report systematic metrics)
+- Skipping ablations (can't attribute improvements)
+</Warning>
+
+## Integration with Other Realms
+
+LLM Systems knowledge enables:
+
+- **Vision Transformers**: Shared architecture patterns
+- **RL Sequence Models**: Sequence modeling for trajectories
+- **Multimodal Alignment**: Text encoder component
+- **Interpretability**: Understanding what to interpret
+- **ML Systems & Scaling**: Production deployment strategies
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Start Short Project" href="/quickstart">
+    Set up environment and begin
+  </Card>
+  
+  <Card title="Review Week 5" href="/weeks/week05-transformer-architecture">
+    Refresh transformer concepts
+  </Card>
+  
+  <Card title="Check nanoGPT" href="https://github.com/karpathy/nanoGPT">
+    Study reference implementation
+  </Card>
+</CardGroup>

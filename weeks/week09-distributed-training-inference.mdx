@@ -1,0 +1,178 @@
+---
+title: "Week 09: Distributed Training and Inference"
+description: "Simulate gradient synchronization and understand why averaging keeps updates stable"
+---
+
+## Module Focus
+
+Simulate gradient synchronization and understand why averaging keeps updates stable across distributed workers.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Master the Core Formula">
+    Explain and derive the gradient averaging formula: `g_avg = (1 / W) * sum(g_worker)` in plain language
+  </Step>
+  
+  <Step title="Translate to Code">
+    Convert mathematical formulas into readable, testable Python implementations
+  </Step>
+  
+  <Step title="Solve the Coding Challenge">
+    Complete the focused coding challenge in 30-60 minutes
+  </Step>
+</Steps>
+
+## Core Concept: Gradient Synchronization
+
+Data-parallel workers compute local gradients that must be aggregated consistently. The fundamental formula is:
+
+```
+g_avg = (1 / W) * sum(g_worker)
+```
+
+### Symbol Glossary
+
+- **W**: number of workers
+- **g_worker**: gradient from one worker
+- **g_avg**: synchronized average gradient
+- **theta**: model parameters
+
+### How It Works
+
+<Accordion title="Derivation Steps">
+  1. **Collect Gradients**: Gather one gradient vector from each worker
+  2. **Average Components**: Average each gradient component across all workers
+  3. **Apply Update**: Use the synchronized gradient for one consistent optimizer step
+  
+  This ensures all model replicas remain synchronized despite computing gradients on different data batches.
+</Accordion>
+
+<Note>
+  Averaging gradients across workers is mathematically equivalent to computing the gradient on the combined batch from all workers, but allows for parallel computation.
+</Note>
+
+## Coding Challenge: Average Worker Gradients
+
+**Duration**: 30-45 minutes
+
+### Problem Statement
+
+Implement gradient averaging across workers for arbitrary gradient dimension.
+
+### Starter Code
+
+Location: `week09_distributed_training_inference/problem.py`
+
+```python
+from __future__ import annotations
+
+
+def average_worker_gradients(worker_gradients: list[list[float]]) -> list[float]:
+    # Average gradients per coordinate across worker list.
+    raise NotImplementedError("Implement average_worker_gradients")
+```
+
+### Requirements
+
+- Implement the function with explicit naming
+- Write clear logic in small readable steps
+- Avoid hidden global state
+- Handle arbitrary gradient dimensions
+
+### Example Implementation
+
+<Accordion title="Reference Solution">
+  ```python
+  def average_worker_gradients(worker_gradients: list[list[float]]) -> list[float]:
+      worker_count = len(worker_gradients)
+      gradient_dimension = len(worker_gradients[0])
+      return [
+          sum(worker_gradients[worker_index][dimension_index] for worker_index in range(worker_count))
+          / worker_count
+          for dimension_index in range(gradient_dimension)
+      ]
+  ```
+  
+  **Key insights:**
+  - Use list comprehension for clean per-dimension averaging
+  - Sum across all workers for each dimension
+  - Divide by worker count to get the mean
+</Accordion>
+
+### Toy Example
+
+```python
+worker_gradients = [
+    [0.2, -0.1],
+    [0.4, 0.3],
+    [0.0, 0.2]
+]
+
+# Average becomes [0.2, 0.1333...]
+# Dimension 0: (0.2 + 0.4 + 0.0) / 3 = 0.2
+# Dimension 1: (-0.1 + 0.3 + 0.2) / 3 = 0.1333
+```
+
+The shared update keeps replicas in sync across all workers.
+
+## Validation
+
+<CodeGroup>
+```bash Reference Tests
+pytest tests/test_problem_solution.py
+```
+
+```bash Exercise Tests
+# Unskip tests first, then run:
+pytest tests/test_problem_exercise.py
+```
+</CodeGroup>
+
+## Reference Materials
+
+<CardGroup cols={1}>
+  <Card title="JAX Scaling Book" href="https://jax-ml.github.io/scaling-book/">
+    Comprehensive guide to scaling machine learning with JAX, including distributed training strategies
+  </Card>
+</CardGroup>
+
+## Suggested Weekly Workflow
+
+<Steps>
+  <Step title="Study the Math">
+    Read `math_walkthrough.md` and reproduce the derivation steps on paper
+  </Step>
+  
+  <Step title="Run Toy Example">
+    Execute `toy_example.py` and verify you understand the expected metrics
+  </Step>
+  
+  <Step title="Implement Solution">
+    Complete `problem.py` with your implementation
+  </Step>
+  
+  <Step title="Test Your Code">
+    Unskip exercise tests and validate your implementation passes all cases
+  </Step>
+  
+  <Step title="Compare and Reflect">
+    Review `solution.py` and write a short reflection on what you learned
+  </Step>
+</Steps>
+
+<Warning>
+  **Common Pitfall**: Don't forget to handle the case where workers may have different gradient dimensions. Always verify the shape consistency before averaging.
+</Warning>
+
+## Prerequisites
+
+Before starting this week, you should be comfortable with:
+- Week 08: Scaling Laws and System Design
+- Basic understanding of data parallelism
+- Python list comprehensions and nested loops
+
+## Next Steps
+
+After completing this week, proceed to:
+- **Week 10**: Evaluation and Benchmarking - Learn how to measure model performance robustly

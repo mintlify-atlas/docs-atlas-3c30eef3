@@ -1,0 +1,372 @@
+---
+title: 'pytorch_trainer.py'
+description: 'PyTorch training loop implementation with safety guards'
+---
+
+## Module Overview
+
+Location: `src/ai_researcher_repo/training/pytorch_trainer.py`
+
+Provides toy-safe PyTorch training utilities for next-token prediction demos with multi-layer safety validation.
+
+## Safety Constants
+
+### MAX_SAFE_TRAINING_STEPS
+
+```python
+MAX_SAFE_TRAINING_STEPS = 200
+```
+
+Hard limit for training steps to prevent accidental long runs. This constant is checked by `validate_training_limits()` before any training begins.
+
+**Purpose**: Protect against:
+- Misconfigured scripts consuming excessive compute
+- Accidental GPU quota exhaustion
+- Long-running processes in CI/CD pipelines
+
+**Usage**:
+```python
+from ai_researcher_repo.training.pytorch_trainer import MAX_SAFE_TRAINING_STEPS
+
+if my_steps > MAX_SAFE_TRAINING_STEPS:
+    print(f"Warning: Reducing steps from {my_steps} to {MAX_SAFE_TRAINING_STEPS}")
+    my_steps = MAX_SAFE_TRAINING_STEPS
+```
+
+---
+
+## Classes
+
+### TrainingSummary
+
+```python
+@dataclass(frozen=True)
+class TrainingSummary:
+    steps_completed: int
+    final_loss: float
+```
+
+Immutable summary of a completed training run.
+
+<ResponseField name="steps_completed" type="int" required>
+  Number of optimization steps actually executed. Should match `config.train.max_steps` for normal completion.
+</ResponseField>
+
+<ResponseField name="final_loss" type="float" required>
+  Cross-entropy loss value from the final training batch. Lower values indicate better fit to the training data.
+</ResponseField>
+
+**Example**:
+```python
+result = train_toy_language_model(config)
+print(f"Trained for {result.steps_completed} steps")
+print(f"Final loss: {result.final_loss:.4f}")
+
+if result.final_loss < 1.0:
+    print("Model is learning the pattern!")
+```
+
+---
+
+## Functions
+
+### train_toy_language_model
+
+```python
+def train_toy_language_model(repository_config: RepositoryConfig) -> TrainingSummary
+```
+
+Main training loop for next-token prediction using a tiny Transformer model. Trains on synthetic character-level data with full safety validation.
+
+<ParamField path="repository_config" type="RepositoryConfig" required>
+  Complete repository configuration containing:
+  - `train`: Training hyperparameters (batch_size, learning_rate, max_steps, etc.)
+  - `model`: Transformer architecture settings (embedding_dimension, head_count, etc.)
+  - `data`: Data generation parameters (synthetic_repeat_count, sequence_length)
+  - `system`: Reproducibility settings (random_seed)
+  
+  See [RepositoryConfig](/api/configs) for full details.
+</ParamField>
+
+<ResponseField name="return" type="TrainingSummary" required>
+  Summary containing `steps_completed` and `final_loss`.
+</ResponseField>
+
+#### Process Flow
+
+1. **Dependency check**: Validates PyTorch is installed
+2. **Safety validation**: Calls `validate_training_limits()` to check step limits
+3. **Reproducibility**: Sets global random seed from config
+4. **Data preparation**:
+   - Creates synthetic corpus
+   - Builds character vocabulary
+   - Encodes text to token IDs
+   - Constructs training batches
+5. **Model initialization**: Creates Transformer with adjusted vocabulary size
+6. **Optimizer setup**: AdamW with configured learning rate and weight decay
+7. **Training loop**: Runs for `max_steps` iterations:
+   - Forward pass through model
+   - Cross-entropy loss calculation
+   - Backward pass and gradient computation
+   - Gradient clipping (prevents exploding gradients)
+   - Optimizer step
+8. **Return summary**: Final step count and loss
+
+#### Configuration Access
+
+The function reads these configuration fields:
+
+**From `config.train`**:
+- `max_steps`: Number of training iterations (default: 50)
+- `batch_size`: Samples per batch (default: 8)
+- `learning_rate`: AdamW learning rate (default: 3e-4)
+- `weight_decay`: L2 regularization weight (default: 0.01)
+- `gradient_clip_norm`: Max gradient norm (default: 1.0)
+- `enable_full_training`: Flag for steps > 50 (default: false)
+
+**From `config.data`**:
+- `synthetic_repeat_count`: Corpus size multiplier (default: 256)
+- `sequence_length`: Token sequence length (default: 64)
+
+**From `config.model`**:
+- `vocabulary_size`: Base vocab size, auto-adjusted to actual vocab (default: 128)
+- `context_length`: Maximum sequence length (default: 64)
+- `embedding_dimension`: Model width (default: 128)
+- `head_count`: Attention heads (default: 4)
+- `layer_count`: Transformer layers (default: 4)
+- `feed_forward_dimension`: FFN width (default: 256)
+- `dropout_probability`: Dropout rate (default: 0.1)
+
+**From `config.system`**:
+- `random_seed`: Random seed for reproducibility (default: 7)
+
+#### Raises
+
+<ResponseField name="ImportError" type="Exception">
+  Raised if PyTorch is not installed. Install with `pip install ai-researcher-repo[pytorch]`.
+</ResponseField>
+
+<ResponseField name="ValueError" type="Exception">
+  Raised by `validate_training_limits()` if:
+  - `max_steps > MAX_SAFE_TRAINING_STEPS` (hard limit: 200)
+  - `max_steps > 50` and `enable_full_training=false` (opt-in required)
+</ResponseField>
+
+#### Examples
+
+**Basic usage with defaults**:
+```python
+from ai_researcher_repo.configs import RepositoryConfig
+from ai_researcher_repo.training.pytorch_trainer import train_toy_language_model
+
+# Uses all defaults: 50 steps, batch_size=8, lr=3e-4
+config = RepositoryConfig()
+result = train_toy_language_model(config)
+
+print(f"Completed {result.steps_completed} steps")
+print(f"Final loss: {result.final_loss:.4f}")
+```
+
+**Custom configuration**:
+```python
+from ai_researcher_repo.configs import RepositoryConfig, TrainConfig, ModelConfig
+from ai_researcher_repo.training.pytorch_trainer import train_toy_language_model
+
+config = RepositoryConfig(
+    train=TrainConfig(
+        max_steps=100,
+        enable_full_training=True,  # Required for steps > 50
+        batch_size=16,
+        learning_rate=1e-3,
+        gradient_clip_norm=0.5,
+    ),
+    model=ModelConfig(
+        embedding_dimension=256,
+        head_count=8,
+        layer_count=6,
+    )
+)
+
+result = train_toy_language_model(config)
+print(f"Training complete: {result.steps_completed} steps, loss={result.final_loss:.4f}")
+```
+
+**Loading from YAML**:
+```python
+from pathlib import Path
+from ai_researcher_repo.configs import load_repository_config
+from ai_researcher_repo.training.pytorch_trainer import train_toy_language_model
+
+config = load_repository_config(Path("experiment_config.yaml"))
+result = train_toy_language_model(config)
+
+if result.final_loss < 0.5:
+    print("Model converged successfully!")
+```
+
+**Error handling**:
+```python
+from ai_researcher_repo.configs import RepositoryConfig, TrainConfig
+from ai_researcher_repo.training.pytorch_trainer import train_toy_language_model
+
+try:
+    # This will raise ValueError: missing enable_full_training flag
+    config = RepositoryConfig(
+        train=TrainConfig(
+            max_steps=75,
+            enable_full_training=False,  # Oops! Forgot to enable
+        )
+    )
+    result = train_toy_language_model(config)
+except ValueError as e:
+    print(f"Safety check failed: {e}")
+    # Fix: Set enable_full_training=True
+```
+
+#### Implementation Details
+
+**Optimizer**: Uses AdamW (Adam with decoupled weight decay)
+```python
+optimizer = torch.optim.AdamW(
+    language_model.parameters(),
+    lr=repository_config.train.learning_rate,
+    weight_decay=repository_config.train.weight_decay,
+)
+```
+
+**Loss function**: Cross-entropy for next-token prediction
+```python
+loss = neural_network_functional.cross_entropy(
+    logits.reshape(-1, logits.size(-1)),  # (batch*seq, vocab)
+    target_tensor.reshape(-1),             # (batch*seq,)
+)
+```
+
+**Gradient clipping**: Prevents exploding gradients
+```python
+torch.nn.utils.clip_grad_norm_(
+    parameters=language_model.parameters(),
+    max_norm=repository_config.train.gradient_clip_norm,
+)
+```
+
+**Device**: Currently CPU-only (GPU support future work)
+
+---
+
+### validate_training_limits
+
+```python
+def validate_training_limits(repository_config: RepositoryConfig) -> None
+```
+
+Validates training configuration against safety limits **before** any resource allocation or training begins.
+
+<ParamField path="repository_config" type="RepositoryConfig" required>
+  Configuration to validate. Checks `repository_config.train.max_steps` and `repository_config.train.enable_full_training`.
+</ParamField>
+
+#### Validation Rules
+
+1. **Hard limit check**: `max_steps <= MAX_SAFE_TRAINING_STEPS` (200)
+2. **Opt-in check**: If `max_steps > 50`, then `enable_full_training` must be `true`
+
+#### Raises
+
+<ResponseField name="ValueError" type="Exception">
+  Raised if either validation rule fails. Error messages clearly indicate:
+  - Which limit was exceeded
+  - What action is required to fix the issue
+</ResponseField>
+
+#### Examples
+
+**Manual validation before training**:
+```python
+from ai_researcher_repo.configs import RepositoryConfig, TrainConfig
+from ai_researcher_repo.training.pytorch_trainer import validate_training_limits
+
+config = RepositoryConfig(
+    train=TrainConfig(
+        max_steps=100,
+        enable_full_training=True,
+    )
+)
+
+# Validate before expensive setup
+try:
+    validate_training_limits(config)
+    print("Configuration passed safety checks")
+except ValueError as e:
+    print(f"Invalid configuration: {e}")
+    # Fix config before proceeding
+```
+
+**Checking limits programmatically**:
+```python
+from ai_researcher_repo.configs import RepositoryConfig, TrainConfig
+from ai_researcher_repo.training.pytorch_trainer import (
+    validate_training_limits,
+    MAX_SAFE_TRAINING_STEPS,
+)
+
+def safe_train_with_fallback(desired_steps: int):
+    """Train with automatic fallback to safe limits."""
+    if desired_steps > MAX_SAFE_TRAINING_STEPS:
+        print(f"Capping steps at {MAX_SAFE_TRAINING_STEPS}")
+        desired_steps = MAX_SAFE_TRAINING_STEPS
+    
+    config = RepositoryConfig(
+        train=TrainConfig(
+            max_steps=desired_steps,
+            enable_full_training=(desired_steps > 50),
+        )
+    )
+    
+    validate_training_limits(config)  # Should always pass now
+    return train_toy_language_model(config)
+
+result = safe_train_with_fallback(desired_steps=150)
+print(f"Safely completed {result.steps_completed} steps")
+```
+
+**Error scenarios**:
+```python
+from ai_researcher_repo.configs import RepositoryConfig, TrainConfig
+from ai_researcher_repo.training.pytorch_trainer import validate_training_limits
+
+# Error 1: Exceeding hard limit
+config1 = RepositoryConfig(train=TrainConfig(max_steps=250))
+try:
+    validate_training_limits(config1)
+except ValueError as e:
+    print(e)  # "Configured max_steps exceeds local safety limit..."
+
+# Error 2: Missing opt-in for steps > 50
+config2 = RepositoryConfig(
+    train=TrainConfig(
+        max_steps=75,
+        enable_full_training=False,  # Missing opt-in!
+    )
+)
+try:
+    validate_training_limits(config2)
+except ValueError as e:
+    print(e)  # "max_steps above 50 requires explicit enable_full_training=true..."
+```
+
+#### Note
+
+<Info>
+  This function is automatically called by `train_toy_language_model()`, so you typically don't need to call it manually. Use it for early validation in custom training pipelines.
+</Info>
+
+---
+
+## See Also
+
+- [Training Overview](/api/training/overview) - Safety philosophy and design principles
+- [TrainConfig](/api/configs) - Complete training configuration reference
+- [RepositoryConfig](/api/configs) - Top-level configuration structure
+- [Synthetic Data](/api/data/synthetic-text) - Training data generation
+- [Transformer Model](/api/models/pytorch-transformer) - Model architecture

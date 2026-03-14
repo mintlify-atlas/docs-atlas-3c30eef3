@@ -1,0 +1,367 @@
+---
+title: 'PyTorch Transformer'
+description: 'Complete transformer language model implementation in PyTorch'
+icon: 'fire'
+---
+
+## Overview
+
+The `TinyTransformerLanguageModel` is a **decoder-only transformer** built with PyTorch's `nn.Module`. It provides a complete, trainable language model with token embeddings, position embeddings, multi-head self-attention, and output projection.
+
+<Info>
+  This is the **recommended implementation** for training and experimentation in the curriculum. It includes all components needed for next-token prediction.
+</Info>
+
+## Class Definition
+
+### TinyTransformerLanguageModel
+
+```python
+class TinyTransformerLanguageModel(torch.nn.Module):
+    def __init__(self, model_config: ModelConfig) -> None:
+        ...
+```
+
+A compact transformer language model for toy-scale training demonstrations.
+
+**Source**: `ai_researcher_repo/models/transformer_pytorch.py:28`
+
+## Initialization
+
+### Constructor Parameters
+
+<ParamField path="model_config" type="ModelConfig" required>
+  Configuration object containing all model hyperparameters
+  
+  **Fields**:
+  - `vocabulary_size`: Size of token vocabulary
+  - `context_length`: Maximum sequence length
+  - `embedding_dimension`: Dimension of embeddings and hidden states
+  - `head_count`: Number of attention heads
+  - `layer_count`: Number of transformer layers
+  - `feed_forward_dimension`: FFN hidden dimension
+  - `dropout_probability`: Dropout rate
+</ParamField>
+
+### Factory Function
+
+```python
+def create_tiny_transformer_language_model(
+    model_config: ModelConfig
+) -> TinyTransformerLanguageModel:
+    return TinyTransformerLanguageModel(model_config)
+```
+
+**Returns**: Initialized transformer model ready for training
+
+**Source**: `ai_researcher_repo/models/transformer_pytorch.py:83`
+
+## Architecture Components
+
+The model consists of four main components, exposed via `PytorchModelComponents`:
+
+### 1. Token Embedding
+
+```python
+self.token_embedding = nn.Embedding(
+    num_embeddings=model_config.vocabulary_size,
+    embedding_dim=model_config.embedding_dimension,
+)
+```
+
+Maps token IDs to dense vector representations.
+
+**Shape**: `(vocabulary_size, embedding_dimension)`
+
+### 2. Position Embedding
+
+```python
+self.position_embedding = nn.Embedding(
+    num_embeddings=model_config.context_length,
+    embedding_dim=model_config.embedding_dimension,
+)
+```
+
+Learned position encodings added to token embeddings.
+
+**Shape**: `(context_length, embedding_dimension)`
+
+### 3. Transformer Encoder
+
+```python
+encoder_layer = nn.TransformerEncoderLayer(
+    d_model=model_config.embedding_dimension,
+    nhead=model_config.head_count,
+    dim_feedforward=model_config.feed_forward_dimension,
+    dropout=model_config.dropout_probability,
+    batch_first=True,
+)
+self.transformer_encoder = nn.TransformerEncoder(
+    encoder_layer=encoder_layer,
+    num_layers=model_config.layer_count,
+)
+```
+
+Stack of transformer encoder layers with multi-head self-attention and feed-forward networks.
+
+**Key Settings**:
+- `batch_first=True`: Input shape is `(batch, sequence, features)`
+- Causal masking applied during forward pass
+
+### 4. Output Projection
+
+```python
+self.output_projection = nn.Linear(
+    model_config.embedding_dimension,
+    model_config.vocabulary_size,
+)
+```
+
+Projects hidden states to vocabulary logits for next-token prediction.
+
+**Shape**: `(embedding_dimension, vocabulary_size)`
+
+## Methods
+
+### forward
+
+```python
+def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
+```
+
+Computes next-token prediction logits for input sequences.
+
+**Source**: `ai_researcher_repo/models/transformer_pytorch.py:56`
+
+<ParamField path="token_ids" type="torch.Tensor" required>
+  Input token IDs of shape `(batch_size, sequence_length)`
+  
+  **Dtype**: `torch.long`
+</ParamField>
+
+<ResponseField name="output" type="torch.Tensor">
+  Logits for next-token prediction
+  
+  **Shape**: `(batch_size, sequence_length, vocabulary_size)`
+  
+  **Dtype**: `torch.float32`
+</ResponseField>
+
+#### Forward Pass Steps
+
+1. **Generate Position Indices**:
+   ```python
+   position_indices = torch.arange(sequence_length, device=token_ids.device)
+   position_indices = position_indices.unsqueeze(0).expand(batch_size, -1)
+   ```
+
+2. **Compute Embeddings**:
+   ```python
+   token_embeddings = self.token_embedding(token_ids)
+   position_embeddings = self.position_embedding(position_indices)
+   hidden_states = token_embeddings + position_embeddings
+   ```
+
+3. **Apply Causal Masking**:
+   ```python
+   attention_mask = torch.triu(
+       torch.ones(sequence_length, sequence_length, device=token_ids.device),
+       diagonal=1,
+   ).bool()
+   ```
+   This creates an upper-triangular mask to prevent attending to future tokens.
+
+4. **Transformer Encoding**:
+   ```python
+   encoded_states = self.transformer_encoder(hidden_states, mask=attention_mask)
+   ```
+
+5. **Project to Vocabulary**:
+   ```python
+   return self.output_projection(encoded_states)
+   ```
+
+## Usage Examples
+
+### Basic Initialization
+
+```python
+from ai_researcher_repo.configs import ModelConfig
+from ai_researcher_repo.models.transformer_pytorch import (
+    create_tiny_transformer_language_model
+)
+
+# Create default configuration
+config = ModelConfig(
+    vocabulary_size=128,
+    context_length=64,
+    embedding_dimension=128,
+    head_count=4,
+    layer_count=4,
+    feed_forward_dimension=256,
+    dropout_probability=0.1
+)
+
+# Initialize model
+model = create_tiny_transformer_language_model(config)
+print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
+```
+
+### Forward Pass
+
+```python
+import torch
+
+# Create sample input (batch_size=2, sequence_length=10)
+token_ids = torch.randint(0, config.vocabulary_size, (2, 10))
+
+# Forward pass
+with torch.no_grad():
+    logits = model(token_ids)
+    print(f"Output shape: {logits.shape}")  # torch.Size([2, 10, 128])
+    
+# Get next-token predictions
+next_token_logits = logits[:, -1, :]  # Last position
+next_token_probs = torch.softmax(next_token_logits, dim=-1)
+next_tokens = torch.argmax(next_token_probs, dim=-1)
+print(f"Predicted next tokens: {next_tokens}")
+```
+
+### Training Integration
+
+```python
+import torch.nn.functional as F
+from torch.optim import AdamW
+
+# Setup optimizer
+optimizer = AdamW(
+    model.parameters(),
+    lr=3e-4,
+    weight_decay=0.01
+)
+
+# Training step
+input_ids = torch.randint(0, config.vocabulary_size, (8, 64))  # batch=8, seq=64
+target_ids = torch.randint(0, config.vocabulary_size, (8, 64))
+
+optimizer.zero_grad()
+logits = model(input_ids)
+loss = F.cross_entropy(
+    logits.reshape(-1, logits.size(-1)),
+    target_ids.reshape(-1)
+)
+loss.backward()
+torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+optimizer.step()
+
+print(f"Training loss: {loss.item():.4f}")
+```
+
+### Complete Training Example
+
+```python
+from ai_researcher_repo.configs import RepositoryConfig
+from ai_researcher_repo.training.pytorch_trainer import train_toy_language_model
+
+# Create full repository configuration
+repo_config = RepositoryConfig()
+
+# Train model
+summary = train_toy_language_model(repo_config)
+print(f"Completed {summary.steps_completed} steps")
+print(f"Final loss: {summary.final_loss:.4f}")
+```
+
+**Source**: See `ai_researcher_repo/training/pytorch_trainer.py:47` for full training implementation.
+
+## Design Considerations
+
+### Causal Attention Mask
+
+The model uses an **upper-triangular boolean mask** to enforce autoregressive behavior:
+
+```python
+attention_mask = torch.triu(
+    torch.ones(sequence_length, sequence_length),
+    diagonal=1
+).bool()
+```
+
+- `diagonal=1`: Masks current and future positions
+- Ensures position `i` can only attend to positions `<= i`
+- Critical for next-token prediction tasks
+
+### Batch-First Format
+
+The model uses `batch_first=True` in `TransformerEncoderLayer`, meaning:
+
+- **Input shape**: `(batch_size, sequence_length, embedding_dim)`
+- **Output shape**: `(batch_size, sequence_length, vocabulary_size)`
+
+This is more intuitive than the default `(sequence_length, batch_size, embedding_dim)` format.
+
+### Position Embeddings
+
+Position information is added via **learned embeddings** rather than sinusoidal encodings:
+
+```python
+position_indices = torch.arange(sequence_length).unsqueeze(0).expand(batch_size, -1)
+position_embeddings = self.position_embedding(position_indices)
+```
+
+This allows the model to learn position representations during training.
+
+## Error Handling
+
+### Import Validation
+
+If PyTorch is not installed, the model raises a helpful error:
+
+```python
+class TinyTransformerLanguageModel:
+    def __init__(self, model_config: ModelConfig) -> None:
+        raise ImportError(
+            "PyTorch is not installed. Install optional dependency group `pytorch`."
+        )
+```
+
+**Install PyTorch**:
+```bash
+pip install torch
+# or
+pip install ai_researcher_repo[pytorch]
+```
+
+## Data Classes
+
+### PytorchModelComponents
+
+```python
+@dataclass(frozen=True)
+class PytorchModelComponents:
+    token_embedding: object
+    position_embedding: object
+    transformer_encoder: object
+    output_projection: object
+```
+
+A frozen dataclass exposing the four core model components for inspection and testing.
+
+**Source**: `ai_researcher_repo/models/transformer_pytorch.py:18`
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Model Configuration" href="/api/configs">
+    Detailed ModelConfig documentation
+  </Card>
+  <Card title="Training Guide" href="/api/training/pytorch-trainer">
+    Train the PyTorch model
+  </Card>
+  <Card title="JAX Implementation" href="/api/models/jax-transformer">
+    Functional JAX attention
+  </Card>
+  <Card title="TensorFlow Implementation" href="/api/models/tensorflow-transformer">
+    TensorFlow attention
+  </Card>
+</CardGroup>

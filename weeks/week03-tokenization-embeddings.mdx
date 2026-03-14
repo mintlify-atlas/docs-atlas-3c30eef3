@@ -1,0 +1,154 @@
+---
+title: "Week 03: Tokenization, Embeddings, and Positional Signals"
+description: "Understand how text becomes token ids and then position-aware vectors"
+---
+
+## Module Focus
+
+Understand how text becomes token ids and then position-aware vectors.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Explain and derive the core formula">
+    Understand sinusoidal positional encoding `PE(pos, 2i) = sin(pos / 10000^(2i/d_model))`.
+  </Step>
+  <Step title="Translate formula to code">
+    Convert tokenization and positional encoding to readable Python.
+  </Step>
+  <Step title="Solve the coding challenge">
+    Build bigram token counts in 30-45 minutes.
+  </Step>
+</Steps>
+
+## Core Formula
+
+```
+PE(pos, 2i) = sin(pos / 10000^(2i/d_model))
+```
+
+## Mathematical Intuition
+
+Token embeddings give meaning, while positional encodings give order.
+
+<Accordion title="Symbol Glossary">
+  - **pos**: token position index (0, 1, 2, ...)
+  - **i**: embedding channel pair index
+  - **d_model**: embedding dimension (total vector size)
+  - **PE**: positional encoding value
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Map text to tokens">
+    Convert text symbols to token ids using a vocabulary.
+  </Step>
+  <Step title="Compute positional encodings">
+    Generate sinusoidal positional values per channel.
+  </Step>
+  <Step title="Combine embeddings">
+    Add token embedding and positional signal element-wise.
+  </Step>
+</Steps>
+
+## Toy Example Walkthrough
+
+1. Tokenize the word `transformer` at character level
+2. Generate first two sinusoidal dimensions for positions 0-3
+3. Inspect how position 0 and position 3 differ despite same token id
+
+### Implementation
+
+```python
+from __future__ import annotations
+import math
+
+def run_toy_example() -> dict[str, float]:
+    text_value = "transformer"
+    vocabulary = {character: index for index, character in enumerate(sorted(set(text_value)))}
+    token_ids = [vocabulary[character] for character in text_value]
+
+    position = 3
+    model_dimension = 8
+    first_sine = math.sin(position / (10000 ** (0 / model_dimension)))
+    first_cosine = math.cos(position / (10000 ** (0 / model_dimension)))
+    return {
+        "primary_metric": float(len(token_ids)),
+        "secondary_metric": first_sine + first_cosine,
+    }
+```
+
+## Coding Challenge
+
+<Card title="Build Bigram Token Counts">
+  **Goal**: Implement `build_bigram_counts` to count adjacent token pairs.
+  
+  **Time**: 30-45 minutes
+  
+  **Requirements**:
+  - Count all consecutive token pairs (bigrams)
+  - Return dictionary mapping `(token_i, token_i+1)` to count
+  - Keep function names and parameter names explicit
+  - Write clear logic in small readable steps
+</Card>
+
+<Accordion title="Reference Solution">
+```python
+from __future__ import annotations
+
+def build_bigram_counts(token_ids: list[int]) -> dict[tuple[int, int], int]:
+    bigram_counts: dict[tuple[int, int], int] = {}
+    for index in range(len(token_ids) - 1):
+        pair = (token_ids[index], token_ids[index + 1])
+        bigram_counts[pair] = bigram_counts.get(pair, 0) + 1
+    return bigram_counts
+```
+</Accordion>
+
+## Formula to Code Mapping
+
+- Character lookup maps to dictionary tokenization
+- Sin/cos formula maps to `math.sin` and `math.cos` operations
+- Positional encoding frequency decreases for higher channel indices
+
+## Why Sinusoidal Encodings?
+
+Sinusoidal positional encodings allow the model to:
+- Distinguish different positions uniquely
+- Generalize to sequence lengths not seen during training
+- Learn relative position relationships through linear transformations
+
+## Reference Materials
+
+<CardGroup cols={3}>
+  <Card title="Stanford CS336" href="https://cs336.stanford.edu/">
+    Language Modeling from Scratch
+  </Card>
+  <Card title="Stanford CS224N" href="https://web.stanford.edu/class/cs224n/">
+    Natural Language Processing
+  </Card>
+  <Card title="Hugging Face LLM Course" href="https://huggingface.co/learn/llm-course/chapter1/1">
+    Practical LLM Training
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Read math_walkthrough.md">
+    Reproduce derivation steps on paper
+  </Step>
+  <Step title="Run toy_example.py">
+    Verify expected metrics and understand tokenization
+  </Step>
+  <Step title="Implement problem.py">
+    Build the bigram counter from scratch
+  </Step>
+  <Step title="Validate with tests">
+    Unskip exercise tests and run pytest
+  </Step>
+  <Step title="Compare and reflect">
+    Review the reference solution and write a short reflection
+  </Step>
+</Steps>

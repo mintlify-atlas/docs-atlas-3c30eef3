@@ -1,0 +1,226 @@
+---
+title: Multimodal Alignment
+description: Learn text-image alignment with contrastive learning and retrieval
+---
+
+# Realm: Multimodal Alignment
+
+Learn text-image representation alignment using contrastive learning and retrieval-style evaluation. Master the techniques behind models like CLIP that bridge vision and language.
+
+## Core Goal
+
+Understand how to align representations from different modalities (text and images) in a shared embedding space. You'll learn contrastive learning objectives, dual-encoder architectures, and retrieval evaluation.
+
+## Prerequisites
+
+Before starting this realm, complete:
+
+- **Weeks 1-8**: Foundational material through transformer architecture
+- **Week 13**: Computer Vision Transformers (for vision encoder)
+- **Week 15**: Multimodal Foundations (provides direct context)
+- **Week 10**: Evaluation and Benchmarks
+
+Recommended: Familiarity with both language and vision transformers.
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="CLIP Paper" href="https://arxiv.org/abs/2103.00020">
+    Learning Transferable Visual Models From Natural Language Supervision
+  </Card>
+  
+  <Card title="DeepMind Research" href="https://deepmind.google/research/">
+    Multimodal learning research
+  </Card>
+  
+  <Card title="Meta AI Blog" href="https://ai.meta.com/blog/">
+    Vision-language research updates
+  </Card>
+  
+  <Card title="Hugging Face Course" href="https://huggingface.co/learn/llm-course/chapter1/1">
+    Practical multimodal implementations
+  </Card>
+</CardGroup>
+
+## Project Ladder
+
+Progress through three tiers of increasing complexity:
+
+### Short Project (1-2 days)
+
+**Goal**: Implement cosine similarity + contrastive loss with toy vectors
+
+<Steps>
+  <Step title="Implement Cosine Similarity">
+    Code normalized dot product. Test with known vectors.
+  </Step>
+  
+  <Step title="Build Contrastive Loss">
+    Implement InfoNCE loss with temperature parameter. Verify gradient flow.
+  </Step>
+  
+  <Step title="Test with Toy Data">
+    Create synthetic embeddings. Train linear projection with contrastive loss.
+  </Step>
+  
+  <Step title="Visualize Embeddings">
+    Use t-SNE or UMAP to show alignment. Compare before/after training.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Cosine similarity implementation with tests
+- InfoNCE loss function
+- Toy training loop
+- Embedding visualization
+
+### Medium Project (3-7 days)
+
+**Goal**: Train tiny dual-encoder on small paired dataset
+
+<Steps>
+  <Step title="Prepare Paired Dataset">
+    Use small image-caption dataset (Flickr8k or subset of COCO). Create dataloaders.
+  </Step>
+  
+  <Step title="Build Dual Encoders">
+    Create tiny vision transformer (4 layers) and text transformer (4 layers). Add projection heads.
+  </Step>
+  
+  <Step title="Train with Contrastive Loss">
+    Implement symmetric loss (image-to-text and text-to-image). Use proper batch construction.
+  </Step>
+  
+  <Step title="Evaluate Retrieval">
+    Compute recall@K for image-to-text and text-to-image retrieval. Analyze failure cases.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Paired image-text dataloader
+- Dual-encoder architecture
+- Training loop with symmetric loss
+- Retrieval evaluation metrics
+- Failure case analysis
+
+### Deep Project (1-2 weeks)
+
+**Goal**: Benchmark retrieval quality under prompt and embedding perturbations
+
+<Steps>
+  <Step title="Train Baseline Model">
+    Train dual-encoder to convergence on full dataset. Establish baseline metrics.
+  </Step>
+  
+  <Step title="Test Prompt Variations">
+    Evaluate retrieval with paraphrased captions, different templates, and adversarial text.
+  </Step>
+  
+  <Step title="Test Image Perturbations">
+    Evaluate with crops, rotations, color shifts, and occlusions. Measure robustness.
+  </Step>
+  
+  <Step title="Analyze Failure Modes">
+    Identify systematic errors. Categorize by error type (semantics, visual similarity, etc.).
+  </Step>
+  
+  <Step title="Document Findings">
+    Write report on robustness vs. accuracy tradeoffs. Propose improvements.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Fully trained dual-encoder model
+- Comprehensive robustness evaluation
+- Failure mode categorization
+- Technical report with recommendations
+
+## Acceptance Criteria
+
+Your work meets professional standards if:
+
+<AccordionGroup>
+  <Accordion title="Contrastive Objective Clearly Derived and Tested">
+    - Mathematical derivation from first principles
+    - Implementation matches formula exactly
+    - Temperature parameter effect analyzed
+    - Symmetric loss verified (I2T and T2I)
+    - Unit tests for edge cases (batch size 1, all duplicates)
+  </Accordion>
+  
+  <Accordion title="Retrieval Metrics Reported and Interpreted">
+    - Recall@1, Recall@5, Recall@10 computed
+    - Both image-to-text and text-to-image reported
+    - Mean reciprocal rank (MRR) included
+    - Retrieval examples visualized
+    - Performance breakdown by category (if available)
+  </Accordion>
+  
+  <Accordion title="Failure Cases Documented with Hypotheses">
+    - At least 10 failure examples shown
+    - Categorized by error type
+    - Hypotheses for each category
+    - Proposed solutions or mitigations
+    - Limitations of current approach acknowledged
+  </Accordion>
+</AccordionGroup>
+
+## Key Concepts to Master
+
+- **Contrastive Learning**: InfoNCE loss, temperature scaling, hard negative mining
+- **Dual Encoders**: Shared vs. separate projection heads, embedding dimensions
+- **Batch Construction**: Positive/negative pairs, in-batch negatives, large batch training
+- **Retrieval Evaluation**: Recall@K, MRR, precision-recall curves
+- **Robustness**: Prompt engineering, augmentation strategies, distribution shift
+
+## Common Pitfalls
+
+<Warning>
+**Avoid these mistakes:**
+
+- Forgetting to normalize embeddings before similarity
+- Using incorrect temperature (too high or too low)
+- Not implementing symmetric loss (only I2T or only T2I)
+- Batch size too small (not enough negatives)
+- Evaluating on training data
+</Warning>
+
+## Implementation Tips
+
+<Accordion title="Temperature Selection">
+Start with temperature 0.07 (CLIP default). Lower values (0.01-0.05) make training sharper but less stable. Higher values (0.1-0.2) are smoother but may underfit. Tune on validation set.
+</Accordion>
+
+<Accordion title="Batch Size Matters">
+Larger batches provide more negatives, improving contrastive learning. Use gradient accumulation if GPU memory is limited. CLIP used batches of 32,768 - start with 128-256.
+</Accordion>
+
+<Accordion title="Projection Heads">
+Add small MLP (1-2 layers) after encoders to project to shared space. Often improves performance vs. using encoder outputs directly. Keep projection dim 256-512.
+</Accordion>
+
+## Integration with Other Realms
+
+Multimodal Alignment knowledge enables:
+
+- **Vision Transformers**: Vision encoder component
+- **LLM Systems**: Text encoder component  
+- **Interpretability**: Understanding cross-modal attention
+- **Alignment & Safety**: Multimodal safety evaluation
+- **ML Systems & Scaling**: Efficient training of large models
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Start Short Project" href="/quickstart">
+    Implement contrastive loss
+  </Card>
+  
+  <Card title="Review Week 15" href="/weeks/week15-multimodal-foundations">
+    Refresh multimodal concepts
+  </Card>
+  
+  <Card title="Read CLIP Paper" href="https://arxiv.org/abs/2103.00020">
+    Study original approach
+  </Card>
+</CardGroup>

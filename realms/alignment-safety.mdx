@@ -1,0 +1,229 @@
+---
+title: Alignment & Safety
+description: Design objectives and evaluations that reduce harmful model behavior
+---
+
+# Realm: Alignment and Safety
+
+Design objectives and evaluation processes that reduce harmful model behavior and uncontrolled drift. Learn the techniques behind RLHF, constitutional AI, and safety evaluation.
+
+## Core Goal
+
+Understand how to align AI systems with human values and intentions. You'll learn preference modeling, KL-regularized training, safety evaluation, and red-teaming strategies.
+
+## Prerequisites
+
+Before starting this realm, complete:
+
+- **Weeks 1-8**: Foundational material through transformer architecture
+- **Week 11**: Alignment and Safety (provides direct context)
+- **Week 14**: RL with Transformers (for RLHF understanding)
+- **Week 10**: Evaluation and Benchmarks
+
+Recommended: Familiarity with policy gradients and value functions.
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="InstructGPT Paper" href="https://arxiv.org/abs/2203.02155">
+    Training language models to follow instructions with human feedback
+  </Card>
+  
+  <Card title="Anthropic Research" href="https://www.anthropic.com/research">
+    Constitutional AI and safety research
+  </Card>
+  
+  <Card title="OpenAI Research" href="https://openai.com/research/">
+    RLHF and alignment techniques
+  </Card>
+  
+  <Card title="Lilian Weng Blog" href="https://lilianweng.github.io/">
+    Comprehensive alignment posts
+  </Card>
+</CardGroup>
+
+## Project Ladder
+
+Progress through three tiers of increasing complexity:
+
+### Short Project (1-2 days)
+
+**Goal**: Implement KL-regularized objective on toy policies
+
+<Steps>
+  <Step title="Implement KL Divergence">
+    Code KL between two categorical distributions. Test with known values.
+  </Step>
+  
+  <Step title="Build Regularized Objective">
+    Implement `reward - beta * KL(policy || reference)`. Verify gradient flow.
+  </Step>
+  
+  <Step title="Test on Toy Problem">
+    Use simple multi-armed bandit. Show KL penalty prevents drift from reference.
+  </Step>
+  
+  <Step title="Tune Beta Parameter">
+    Sweep beta values. Plot reward vs. KL tradeoff curve.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- KL divergence implementation with tests
+- Regularized objective function
+- Toy training loop
+- Beta tuning analysis
+
+### Medium Project (3-7 days)
+
+**Goal**: Evaluate preference-style objective variants on toy datasets
+
+<Steps>
+  <Step title="Create Preference Dataset">
+    Generate or collect pairwise preferences (response A > response B). Include diverse scenarios.
+  </Step>
+  
+  <Step title="Implement Bradley-Terry Model">
+    Train reward model to predict preference probabilities. Validate on held-out pairs.
+  </Step>
+  
+  <Step title="Compare Objectives">
+    Test different formulations: pointwise rewards, pairwise ranking, listwise ranking.
+  </Step>
+  
+  <Step title="Analyze Agreement">
+    Measure inter-annotator agreement. Study model predictions on ambiguous cases.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Preference dataset with documentation
+- Reward model implementation
+- Objective comparison study
+- Agreement analysis
+
+### Deep Project (1-2 weeks)
+
+**Goal**: Create safety-focused evaluation suite with red-team style prompts
+
+<Steps>
+  <Step title="Design Safety Categories">
+    Define categories: harmful content, bias, misinformation, privacy leaks, jailbreaks.
+  </Step>
+  
+  <Step title="Collect Test Cases">
+    Generate or source adversarial prompts for each category. Include edge cases.
+  </Step>
+  
+  <Step title="Implement Classifiers">
+    Build or use existing classifiers for each safety category. Validate accuracy.
+  </Step>
+  
+  <Step title="Evaluate Models">
+    Test baseline and aligned models on safety suite. Compute safety scores per category.
+  </Step>
+  
+  <Step title="Analyze Tradeoffs">
+    Measure capability degradation from alignment. Plot safety vs. capability frontier.
+  </Step>
+  
+  <Step title="Document Findings">
+    Write report on safety evaluation methodology and results.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Safety evaluation suite with 100+ test cases
+- Category-specific classifiers
+- Model comparison results
+- Safety vs. capability analysis
+- Technical report
+
+## Acceptance Criteria
+
+Your work meets professional standards if:
+
+<AccordionGroup>
+  <Accordion title="Safety Objective Mathematically and Empirically Validated">
+    - Objective derivation from first principles
+    - Gradient flow verified analytically
+    - Empirical validation on test problems
+    - Hyperparameter sensitivity analyzed
+    - Failure modes documented
+  </Accordion>
+  
+  <Accordion title="Evaluation Protocol Includes Adversarial Slices">
+    - Red-team prompts covering diverse attack vectors
+    - Both automated and human evaluation
+    - False positive/negative rates measured
+    - Edge cases explicitly tested
+    - Evaluation blind to model identity where possible
+  </Accordion>
+  
+  <Accordion title="Tradeoffs Documented (Quality vs. Safety Constraints)">
+    - Capability benchmarks before and after alignment
+    - Safety improvements quantified
+    - Pareto frontier visualized
+    - Recommendation for beta/constraint tuning
+    - Limitations and open problems stated
+  </Accordion>
+</AccordionGroup>
+
+## Key Concepts to Master
+
+- **RLHF Pipeline**: Supervised fine-tuning → reward modeling → RL fine-tuning
+- **KL Regularization**: Preventing distribution drift, beta tuning, adaptive penalties
+- **Preference Modeling**: Bradley-Terry models, pairwise ranking, reward shaping
+- **Safety Evaluation**: Red-teaming, adversarial testing, inter-rater reliability
+- **Tradeoffs**: Capability vs. safety, generalization vs. specification
+
+## Common Pitfalls
+
+<Warning>
+**Avoid these mistakes:**
+
+- KL penalty too high (model doesn't learn)
+- KL penalty too low (catastrophic forgetting)
+- Reward model overfitting to training preferences
+- Evaluation on in-distribution samples only
+- Ignoring capability degradation
+</Warning>
+
+## Implementation Tips
+
+<Accordion title="Beta Selection for KL Penalty">
+Start with beta = 0.01-0.1. Too high and the model won't improve. Too low and it will forget pre-training. Tune on validation reward and KL. Adaptive beta (increase over training) can help.
+</Accordion>
+
+<Accordion title="Reward Model Training">
+Use pairwise ranking loss (Bradley-Terry). Collect diverse preferences covering edge cases. Regularize heavily to prevent overfitting. Validate on held-out preference pairs.
+</Accordion>
+
+<Accordion title="Red-Teaming Strategy">
+Create adversarial prompts systematically: direct requests, roleplay, obfuscation, prompt injection. Test boundary cases. Iterate with human red-teamers. Document all attempts.
+</Accordion>
+
+## Integration with Other Realms
+
+Alignment & Safety knowledge enables:
+
+- **LLM Systems**: Building safer language models
+- **RL Sequence Models**: Applying RLHF techniques
+- **Interpretability**: Understanding alignment mechanisms
+- **Multimodal Alignment**: Safety for vision-language models
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Start Short Project" href="/quickstart">
+    Implement KL-regularized objective
+  </Card>
+  
+  <Card title="Review Week 11" href="/weeks/week11-alignment-safety">
+    Refresh alignment concepts
+  </Card>
+  
+  <Card title="Read InstructGPT" href="https://arxiv.org/abs/2203.02155">
+    Study RLHF in practice
+  </Card>
+</CardGroup>

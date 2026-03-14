@@ -1,0 +1,224 @@
+---
+title: "Evaluation Metrics"
+description: "Deterministic evaluation helpers for measuring model performance"
+---
+
+## Overview
+
+The `evaluation.metrics` module provides core evaluation functions for language model training, including cross-entropy loss calculation and perplexity computation. All functions are implemented with numerical stability in mind.
+
+## Functions
+
+### stable_softmax()
+
+Computes numerically stable softmax over logits using the log-sum-exp trick.
+
+```python
+def stable_softmax(logits: list[float]) -> list[float]
+```
+
+<ParamField path="logits" type="list[float]" required>
+  Raw model output scores (unnormalized)
+</ParamField>
+
+<ResponseField name="probabilities" type="list[float]">
+  Normalized probability distribution that sums to 1.0
+</ResponseField>
+
+#### Implementation Details
+
+The function subtracts the maximum logit before computing exponentials to prevent overflow:
+
+$$
+\text{softmax}(x_i) = \frac{e^{x_i - \max(x)}}{\sum_j e^{x_j - \max(x)}}
+$$
+
+#### Example
+
+```python
+from ai_researcher_repo.evaluation.metrics import stable_softmax
+
+logits = [2.0, 1.0, 0.1]
+probs = stable_softmax(logits)
+print(probs)  # [0.659, 0.242, 0.099]
+print(sum(probs))  # 1.0
+```
+
+---
+
+### cross_entropy_for_target()
+
+Computes cross-entropy loss for a single target token given model logits.
+
+```python
+def cross_entropy_for_target(logits: list[float], target_index: int) -> float
+```
+
+<ParamField path="logits" type="list[float]" required>
+  Raw model output scores for all vocabulary tokens
+</ParamField>
+
+<ParamField path="target_index" type="int" required>
+  Index of the correct token in the vocabulary
+</ParamField>
+
+<ResponseField name="loss" type="float">
+  Cross-entropy loss (negative log probability of target)
+</ResponseField>
+
+#### Mathematical Formula
+
+The cross-entropy loss measures how well the predicted distribution matches the true distribution:
+
+$$
+\mathcal{L}_{\text{CE}} = -\log(p_{\text{target}}) = -\log\left(\frac{e^{x_{\text{target}}}}{\sum_j e^{x_j}}\right)
+$$
+
+where $x$ are the logits and $p$ are the softmax probabilities.
+
+#### Example
+
+```python
+from ai_researcher_repo.evaluation.metrics import cross_entropy_for_target
+
+# Model predicts logits for 3 possible tokens
+logits = [2.0, 1.0, 0.1]
+target_index = 0  # First token is correct
+
+loss = cross_entropy_for_target(logits, target_index)
+print(f"Loss: {loss:.3f}")  # Loss: 0.417
+
+# If model was less confident about correct token
+logits_bad = [0.1, 2.0, 1.0]
+loss_bad = cross_entropy_for_target(logits_bad, 0)
+print(f"Loss: {loss_bad:.3f}")  # Loss: 2.317 (higher = worse)
+```
+
+#### Usage in Training
+
+This function is typically called for each position in a sequence, then averaged:
+
+```python
+total_loss = 0.0
+for position in range(sequence_length):
+    loss = cross_entropy_for_target(
+        logits=model_output[position],
+        target_index=ground_truth[position]
+    )
+    total_loss += loss
+
+average_loss = total_loss / sequence_length
+```
+
+---
+
+### perplexity_from_average_loss()
+
+Converts average cross-entropy loss to perplexity metric.
+
+```python
+def perplexity_from_average_loss(average_cross_entropy_loss: float) -> float
+```
+
+<ParamField path="average_cross_entropy_loss" type="float" required>
+  Mean cross-entropy loss across all tokens in evaluation set
+</ParamField>
+
+<ResponseField name="perplexity" type="float">
+  Perplexity score (exponential of average loss)
+</ResponseField>
+
+#### Mathematical Formula
+
+Perplexity is the exponential of the average cross-entropy loss:
+
+$$
+\text{PPL} = \exp\left(\frac{1}{N}\sum_{i=1}^{N} \mathcal{L}_{\text{CE}}^{(i)}\right)
+$$
+
+It can be interpreted as the effective vocabulary size the model is "confused" over.
+
+#### Interpretation
+
+- **Lower perplexity = better model**: The model is less uncertain
+- **Perplexity of 1.0**: Perfect prediction (loss = 0)
+- **Perplexity of V**: Random guessing over vocabulary of size V
+
+#### Example
+
+```python
+from ai_researcher_repo.evaluation.metrics import (
+    cross_entropy_for_target,
+    perplexity_from_average_loss
+)
+
+# Evaluate on a small sequence
+losses = []
+for logits, target in zip(model_outputs, ground_truth):
+    loss = cross_entropy_for_target(logits, target)
+    losses.append(loss)
+
+average_loss = sum(losses) / len(losses)
+perplexity = perplexity_from_average_loss(average_loss)
+
+print(f"Average Loss: {average_loss:.3f}")
+print(f"Perplexity: {perplexity:.3f}")
+```
+
+#### Complete Evaluation Pipeline
+
+```python
+from ai_researcher_repo.evaluation.metrics import (
+    cross_entropy_for_target,
+    perplexity_from_average_loss
+)
+
+def evaluate_model(model, test_data):
+    """Compute perplexity on test data."""
+    total_loss = 0.0
+    total_tokens = 0
+    
+    for batch in test_data:
+        for sequence_idx in range(len(batch.input_tokens)):
+            inputs = batch.input_tokens[sequence_idx]
+            targets = batch.target_tokens[sequence_idx]
+            
+            # Get model predictions
+            logits = model.forward(inputs)  # shape: (seq_len, vocab_size)
+            
+            # Compute loss for each position
+            for pos in range(len(targets)):
+                loss = cross_entropy_for_target(
+                    logits=logits[pos],
+                    target_index=targets[pos]
+                )
+                total_loss += loss
+                total_tokens += 1
+    
+    average_loss = total_loss / total_tokens
+    perplexity = perplexity_from_average_loss(average_loss)
+    
+    return {
+        "average_loss": average_loss,
+        "perplexity": perplexity,
+        "total_tokens": total_tokens
+    }
+```
+
+## Numerical Stability
+
+All functions in this module are designed for numerical stability:
+
+- **stable_softmax**: Uses max-subtraction to prevent overflow
+- **cross_entropy_for_target**: Inherits stability from softmax
+- **perplexity_from_average_loss**: Direct exponential (stable for reasonable losses)
+
+<Warning>
+  For very large vocabularies (>100K tokens), consider using built-in PyTorch/JAX loss functions which are optimized for GPU computation and mixed precision.
+</Warning>
+
+## Source Location
+
+```
+src/ai_researcher_repo/evaluation/metrics.py
+```

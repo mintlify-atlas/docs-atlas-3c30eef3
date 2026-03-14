@@ -1,0 +1,418 @@
+---
+title: 'JAX Transformer'
+description: 'Pure functional scaled dot-product attention implementation in JAX'
+icon: 'code'
+---
+
+## Overview
+
+The JAX implementation provides a **pure functional** scaled dot-product attention mechanism. Unlike the PyTorch version, this is a low-level building block rather than a complete model, demonstrating JAX's functional programming approach.
+
+<Note>
+  This implementation focuses on the **core attention mechanism** only. It's designed for research and custom implementations where you need fine-grained control over the attention computation.
+</Note>
+
+## Function Definition
+
+### scaled_dot_product_attention_jax
+
+```python
+def scaled_dot_product_attention_jax(
+    query_matrix: Any,
+    key_matrix: Any,
+    value_matrix: Any,
+) -> Any:
+```
+
+Computes scaled dot-product attention using JAX array operations.
+
+**Source**: `ai_researcher_repo/models/transformer_jax.py:14`
+
+## Parameters
+
+<ParamField path="query_matrix" type="jax.Array" required>
+  Query matrix from the attention mechanism
+  
+  **Shape**: `(..., seq_len_q, key_dim)`
+  
+  **Dtype**: Typically `float32`
+  
+  Can have arbitrary leading batch dimensions
+</ParamField>
+
+<ParamField path="key_matrix" type="jax.Array" required>
+  Key matrix from the attention mechanism
+  
+  **Shape**: `(..., seq_len_k, key_dim)`
+  
+  **Dtype**: Must match `query_matrix`
+  
+  The `key_dim` must match the last dimension of `query_matrix`
+</ParamField>
+
+<ParamField path="value_matrix" type="jax.Array" required>
+  Value matrix from the attention mechanism
+  
+  **Shape**: `(..., seq_len_k, value_dim)`
+  
+  **Dtype**: Must match `query_matrix`
+  
+  The sequence length must match `key_matrix`
+</ParamField>
+
+## Returns
+
+<ResponseField name="output" type="jax.Array">
+  Attention-weighted values
+  
+  **Shape**: `(..., seq_len_q, value_dim)`
+  
+  **Dtype**: Same as input arrays
+  
+  The output has the same batch dimensions and query sequence length as the input, with the value dimension from `value_matrix`
+</ResponseField>
+
+## Algorithm Implementation
+
+The function implements the standard scaled dot-product attention formula:
+
+$$
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+$$
+
+### Step-by-Step Breakdown
+
+```python
+# 1. Extract key dimension for scaling
+key_dimension = query_matrix.shape[-1]
+scaling_factor = 1.0 / math.sqrt(key_dimension)
+```
+
+The scaling factor is $\frac{1}{\sqrt{d_k}}$ where $d_k$ is the key dimension.
+
+```python
+# 2. Compute attention scores (Q @ K^T)
+attention_scores = jax_numpy.matmul(
+    query_matrix,
+    jax_numpy.swapaxes(key_matrix, -1, -2)
+)
+```
+
+Computes the dot product between queries and keys. `swapaxes` transposes the last two dimensions.
+
+```python
+# 3. Scale the scores
+scaled_scores = attention_scores * scaling_factor
+```
+
+Applies the $\frac{1}{\sqrt{d_k}}$ scaling to prevent gradients from vanishing.
+
+```python
+# 4. Compute attention weights (manual softmax)
+attention_weights = jax_numpy.exp(scaled_scores)
+attention_weights = attention_weights / attention_weights.sum(axis=-1, keepdims=True)
+```
+
+**Manual softmax implementation** for educational clarity:
+- Exponentiate the scaled scores
+- Normalize by the sum across the key dimension
+
+<Warning>
+  This implementation uses a **numerically unstable softmax** for clarity. Production code should use `jax.nn.softmax` which includes the log-sum-exp trick.
+</Warning>
+
+```python
+# 5. Apply attention weights to values
+return jax_numpy.matmul(attention_weights, value_matrix)
+```
+
+Multiplies the attention weights by the value matrix to produce the final output.
+
+## Usage Examples
+
+### Basic Attention Computation
+
+```python
+import jax.numpy as jnp
+from ai_researcher_repo.models.transformer_jax import (
+    scaled_dot_product_attention_jax
+)
+
+# Create sample inputs
+batch_size = 2
+seq_len = 10
+key_dim = 64
+value_dim = 64
+
+query = jnp.ones((batch_size, seq_len, key_dim))
+key = jnp.ones((batch_size, seq_len, key_dim))
+value = jnp.ones((batch_size, seq_len, value_dim))
+
+# Compute attention
+output = scaled_dot_product_attention_jax(query, key, value)
+print(f"Output shape: {output.shape}")  # (2, 10, 64)
+```
+
+### Multi-Head Attention Pattern
+
+```python
+import jax
+import jax.numpy as jnp
+from ai_researcher_repo.models.transformer_jax import (
+    scaled_dot_product_attention_jax
+)
+
+# Setup
+batch_size = 4
+seq_len = 20
+model_dim = 128
+num_heads = 8
+head_dim = model_dim // num_heads  # 16
+
+# Project to Q, K, V (normally done with learned linear layers)
+rng = jax.random.PRNGKey(0)
+x = jax.random.normal(rng, (batch_size, seq_len, model_dim))
+
+# Reshape for multi-head attention: (batch, num_heads, seq_len, head_dim)
+q = x.reshape(batch_size, seq_len, num_heads, head_dim).transpose(0, 2, 1, 3)
+k = x.reshape(batch_size, seq_len, num_heads, head_dim).transpose(0, 2, 1, 3)
+v = x.reshape(batch_size, seq_len, num_heads, head_dim).transpose(0, 2, 1, 3)
+
+print(f"Q shape: {q.shape}")  # (4, 8, 20, 16)
+
+# Apply attention to each head (vmap over head dimension)
+def attention_single_head(q_head, k_head, v_head):
+    return scaled_dot_product_attention_jax(q_head, k_head, v_head)
+
+# Vectorize over the head dimension (axis 1)
+attention_output = jax.vmap(
+    attention_single_head,
+    in_axes=(1, 1, 1),
+    out_axes=1
+)(q, k, v)
+
+print(f"Attention output shape: {attention_output.shape}")  # (4, 8, 20, 16)
+
+# Concatenate heads back together
+output = attention_output.transpose(0, 2, 1, 3).reshape(
+    batch_size, seq_len, model_dim
+)
+print(f"Final output shape: {output.shape}")  # (4, 20, 128)
+```
+
+### Cross-Attention Example
+
+```python
+import jax.numpy as jnp
+from ai_researcher_repo.models.transformer_jax import (
+    scaled_dot_product_attention_jax
+)
+
+# Encoder-decoder cross-attention setup
+batch_size = 2
+encoder_seq_len = 15
+decoder_seq_len = 10
+hidden_dim = 64
+
+# Query comes from decoder
+query = jnp.ones((batch_size, decoder_seq_len, hidden_dim))
+
+# Key and value come from encoder
+key = jnp.ones((batch_size, encoder_seq_len, hidden_dim))
+value = jnp.ones((batch_size, encoder_seq_len, hidden_dim))
+
+# Cross-attention: decoder attends to encoder
+output = scaled_dot_product_attention_jax(query, key, value)
+print(f"Cross-attention output: {output.shape}")  # (2, 10, 64)
+```
+
+### Integration with JAX Transformations
+
+```python
+import jax
+import jax.numpy as jnp
+from ai_researcher_repo.models.transformer_jax import (
+    scaled_dot_product_attention_jax
+)
+
+# Define a simple attention layer with parameters
+def attention_layer(params, x):
+    """Single-head attention with learned projections."""
+    q = jnp.dot(x, params['W_q'])
+    k = jnp.dot(x, params['W_k'])
+    v = jnp.dot(x, params['W_v'])
+    return scaled_dot_product_attention_jax(q, k, v)
+
+# Initialize parameters
+rng = jax.random.PRNGKey(42)
+model_dim = 32
+params = {
+    'W_q': jax.random.normal(rng, (model_dim, model_dim)) * 0.02,
+    'W_k': jax.random.normal(rng, (model_dim, model_dim)) * 0.02,
+    'W_v': jax.random.normal(rng, (model_dim, model_dim)) * 0.02,
+}
+
+# Sample input
+x = jax.random.normal(rng, (5, model_dim))  # 5 tokens
+
+# Forward pass
+output = attention_layer(params, x)
+print(f"Output: {output.shape}")  # (5, 32)
+
+# Compute gradients with respect to parameters
+grad_fn = jax.grad(lambda p: jnp.sum(attention_layer(p, x) ** 2))
+grads = grad_fn(params)
+print(f"Gradient keys: {grads.keys()}")  # dict_keys(['W_q', 'W_k', 'W_v'])
+```
+
+## Design Philosophy
+
+### Functional Purity
+
+The function is **pure** with no side effects:
+- No mutable state
+- No randomness (deterministic)
+- Output depends only on inputs
+
+This enables JAX transformations like:
+- `jax.grad`: Automatic differentiation
+- `jax.vmap`: Automatic vectorization
+- `jax.jit`: JIT compilation with XLA
+
+### Manual Softmax
+
+The implementation uses a **manual softmax** for educational purposes:
+
+```python
+attention_weights = jax_numpy.exp(scaled_scores)
+attention_weights = attention_weights / attention_weights.sum(axis=-1, keepdims=True)
+```
+
+**Production alternative**:
+```python
+attention_weights = jax.nn.softmax(scaled_scores, axis=-1)
+```
+
+The production version is numerically stable and prevents overflow.
+
+### Type Annotations
+
+The function uses `Any` type hints:
+
+```python
+def scaled_dot_product_attention_jax(
+    query_matrix: Any,
+    key_matrix: Any,
+    value_matrix: Any,
+) -> Any:
+```
+
+This allows flexibility with different JAX array types while avoiding import-time dependencies.
+
+## Comparison with PyTorch
+
+| Aspect | JAX Implementation | PyTorch Implementation |
+|--------|-------------------|------------------------|
+| **Abstraction** | Function (attention only) | Class (full model) |
+| **State** | Stateless, pure function | Stateful nn.Module |
+| **Scope** | Single operation | Complete language model |
+| **Parameters** | None (bring your own) | Learned embeddings, layers |
+| **Masking** | Not included | Causal mask built-in |
+| **Use Case** | Custom research code | Ready-to-train model |
+
+## Error Handling
+
+### Import Validation
+
+The function raises an error if JAX is not installed:
+
+```python
+if jax_numpy is None:
+    raise ImportError(
+        "JAX is not installed. Install optional dependency group `jax`."
+    )
+```
+
+**Install JAX**:
+```bash
+pip install jax jaxlib
+# or
+pip install ai_researcher_repo[jax]
+```
+
+### Shape Validation
+
+JAX will raise errors if shapes are incompatible:
+
+```python
+# This will fail: key_dim mismatch
+query = jnp.ones((2, 10, 64))
+key = jnp.ones((2, 10, 32))  # Different last dimension!
+value = jnp.ones((2, 10, 64))
+
+scaled_dot_product_attention_jax(query, key, value)  # Error!
+```
+
+## Performance Considerations
+
+### XLA Compilation
+
+For best performance, JIT-compile the function:
+
+```python
+import jax
+from ai_researcher_repo.models.transformer_jax import (
+    scaled_dot_product_attention_jax
+)
+
+# Compile with JIT
+attention_jit = jax.jit(scaled_dot_product_attention_jax)
+
+# First call: compilation overhead
+output1 = attention_jit(query, key, value)  # Slow (compiles)
+
+# Subsequent calls: fast!
+output2 = attention_jit(query, key, value)  # Fast (cached)
+```
+
+### Memory Efficiency
+
+The attention matrix scales as $O(n^2)$ where $n$ is sequence length. For long sequences, consider:
+
+- **Flash Attention**: Linear memory attention
+- **Chunking**: Process in smaller blocks
+- **Sparse Attention**: Attend to subset of tokens
+
+## Framework Parity
+
+This JAX implementation mirrors the TensorFlow version, demonstrating **framework parity** for educational comparison:
+
+<CodeGroup>
+```python JAX
+scaled_scores = attention_scores * scaling_factor
+attention_weights = jax_numpy.exp(scaled_scores)
+attention_weights = attention_weights / attention_weights.sum(axis=-1, keepdims=True)
+```
+
+```python TensorFlow
+scaled_scores = attention_scores * scaling_factor
+attention_weights = tensorflow.nn.softmax(scaled_scores, axis=-1)
+```
+</CodeGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="PyTorch Transformer" href="/api/models/pytorch-transformer">
+    Complete transformer model
+  </Card>
+  <Card title="TensorFlow Transformer" href="/api/models/tensorflow-transformer">
+    TensorFlow attention implementation
+  </Card>
+  <Card title="Models Overview" href="/api/models/overview">
+    Framework comparison
+  </Card>
+  <Card title="JAX Documentation" href="https://jax.readthedocs.io/">
+    Official JAX docs
+  </Card>
+</CardGroup>

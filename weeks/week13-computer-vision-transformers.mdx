@@ -1,0 +1,312 @@
+---
+title: "Week 13: Computer Vision Transformers"
+description: "Patchify images and reason about how ViT-style tokenization works"
+---
+
+## Module Focus
+
+Patchify images and understand how Vision Transformers (ViT) process images as sequences of patch tokens instead of pixels.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Master Image Patchification">
+    Learn how to split images into non-overlapping square patches
+  </Step>
+  
+  <Step title="Understand the Formula">
+    Derive `patch_count = (height / patch_size) * (width / patch_size)`
+  </Step>
+  
+  <Step title="Implement ViT Tokenization">
+    Build an image patchifier in 40-60 minutes
+  </Step>
+</Steps>
+
+## Core Concept: Vision Transformers
+
+Vision transformers process images as a sequence of patch tokens instead of pixels:
+
+```
+patch_count = (height / patch_size) * (width / patch_size)
+```
+
+Each patch becomes a **token** fed into a transformer encoder, just like words in NLP.
+
+### Symbol Glossary
+
+- **height, width**: Image dimensions (pixels)
+- **patch_size**: Square patch edge length (e.g., 16x16)
+- **patch_count**: Number of patch tokens
+- **patch_vector**: Flattened patch values (patch_size²)
+
+### Why Patches Instead of Pixels?
+
+<Note>
+  Processing individual pixels with attention would be computationally prohibitive:
+  - A 224x224 image has 50,176 pixels
+  - Attention complexity is O(n²), so pixel-level attention would require 2.5B operations!
+  - With 16x16 patches, we get only 196 tokens (78,000x fewer operations)
+</Note>
+
+## How ViT Tokenization Works
+
+<Steps>
+  <Step title="Split into Patches">
+    Divide the image grid into non-overlapping square windows of size `patch_size × patch_size`
+  </Step>
+  
+  <Step title="Flatten Each Patch">
+    Convert each 2D patch into a 1D vector by concatenating rows
+    ```
+    [a b]  →  [a, b, c, d]
+    [c d]
+    ```
+  </Step>
+  
+  <Step title="Feed to Transformer">
+    Treat the sequence of flattened patches as tokens and process with transformer encoder
+  </Step>
+</Steps>
+
+<Accordion title="Intuition: Patches as Visual Words">
+  Just as language models process **words** (not individual characters), vision transformers process **patches** (not individual pixels).
+  
+  - Each patch captures local visual patterns
+  - Transformer attention learns relationships between patches
+  - Position embeddings preserve spatial structure
+  - A [CLS] token aggregates global information
+  
+  This allows ViTs to learn both local features and global context efficiently.
+</Accordion>
+
+## Coding Challenge: Image Patchifier
+
+**Duration**: 40-60 minutes
+
+### Problem Statement
+
+Implement `patchify_image` for square images and square patches.
+
+### Starter Code
+
+Location: `week13_computer_vision_transformers/problem.py`
+
+```python
+from __future__ import annotations
+
+
+def patchify_image(
+    image: list[list[float]],
+    patch_size: int,
+) -> list[list[float]]:
+    # Return flattened non-overlapping patch tokens.
+    raise NotImplementedError("Implement patchify_image")
+```
+
+### Requirements
+
+- Input: 2D image as list of lists (square, size divisible by patch_size)
+- Output: List of flattened patch vectors
+- Each patch should be flattened row-by-row
+- Patches should be extracted in row-major order (left-to-right, top-to-bottom)
+
+### Example Implementation
+
+<Accordion title="Reference Solution">
+  ```python
+  def patchify_image(
+      image: list[list[float]],
+      patch_size: int,
+  ) -> list[list[float]]:
+      image_size = len(image)
+      patches: list[list[float]] = []
+      
+      for row_start in range(0, image_size, patch_size):
+          for column_start in range(0, image_size, patch_size):
+              patch: list[float] = []
+              for row_offset in range(patch_size):
+                  patch.extend(
+                      image[row_start + row_offset][column_start : column_start + patch_size]
+                  )
+              patches.append(patch)
+      
+      return patches
+  ```
+  
+  **Key insights:**
+  - Outer loops iterate over patch starting positions (step by `patch_size`)
+  - Inner loop builds each patch by extracting row slices
+  - `extend()` flattens each row into the patch vector
+  - Result is a list of patch_count patches, each with patch_size² elements
+</Accordion>
+
+### Toy Example
+
+```python
+# 4x4 image, patch_size = 2
+image = [
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16]
+]
+
+patches = patchify_image(image, patch_size=2)
+
+# Expected output: 4 patches, each with 4 values
+# [
+#   [1, 2, 5, 6],      # Top-left patch
+#   [3, 4, 7, 8],      # Top-right patch
+#   [9, 10, 13, 14],   # Bottom-left patch
+#   [11, 12, 15, 16]   # Bottom-right patch
+# ]
+```
+
+**Visual representation:**
+
+```
+Patch 0:  [1  2]    Patch 1:  [3  4]
+          [5  6]              [7  8]
+
+Patch 2:  [9  10]   Patch 3:  [11 12]
+          [13 14]             [15 16]
+```
+
+<Warning>
+  **Index Arithmetic**: Make sure to use `row_start + row_offset` for the row index and slice `[column_start : column_start + patch_size]` for columns. Off-by-one errors are common!
+</Warning>
+
+## Validation
+
+<CodeGroup>
+```bash Reference Tests
+pytest tests/test_problem_solution.py
+```
+
+```bash Exercise Tests
+# Unskip tests first, then run:
+pytest tests/test_problem_exercise.py
+```
+</CodeGroup>
+
+## Reference Materials
+
+<CardGroup cols={1}>
+  <Card title="Meta AI Blog" href="https://ai.meta.com/blog/">
+    Research on vision transformers, including DINOv2 and Segment Anything
+  </Card>
+</CardGroup>
+
+## From Patches to Embeddings
+
+<Accordion title="Complete ViT Pipeline">
+  After patchification, a full Vision Transformer does:
+  
+  1. **Linear projection**: Map each patch vector to embedding dimension
+     ```
+     patch_embedding = patch_vector @ projection_matrix
+     ```
+  
+  2. **Add position embeddings**: Encode spatial location
+     ```
+     embedded_patch += position_embedding[i]
+     ```
+  
+  3. **Prepend [CLS] token**: Special token for classification
+     ```
+     sequence = [CLS_token] + patch_embeddings
+     ```
+  
+  4. **Transformer encoder**: Multi-head attention + feedforward
+     ```
+     output = TransformerEncoder(sequence)
+     ```
+  
+  5. **Classification head**: Linear layer on [CLS] token
+     ```
+     logits = output[0] @ classification_head
+     ```
+</Accordion>
+
+## Suggested Weekly Workflow
+
+<Steps>
+  <Step title="Study the Math">
+    Read `math_walkthrough.md` and calculate patch counts for different image sizes
+  </Step>
+  
+  <Step title="Run Toy Example">
+    Execute `toy_example.py` and verify patch extraction by hand
+  </Step>
+  
+  <Step title="Implement Solution">
+    Complete `problem.py` with careful index management
+  </Step>
+  
+  <Step title="Test Your Code">
+    Unskip exercise tests and validate different image/patch sizes
+  </Step>
+  
+  <Step title="Compare and Reflect">
+    Review `solution.py` and consider: how would you handle color images (RGB)?
+  </Step>
+</Steps>
+
+## Design Trade-offs
+
+<Accordion title="Choosing Patch Size">
+  **Larger patches (e.g., 32x32)**:
+  - ✅ Fewer tokens → less computation
+  - ✅ Larger receptive field per token
+  - ❌ Loss of fine-grained detail
+  - ❌ May miss small objects
+  
+  **Smaller patches (e.g., 8x8)**:
+  - ✅ More detailed representation
+  - ✅ Better for small objects
+  - ❌ More tokens → quadratic attention cost
+  - ❌ Requires more training data
+  
+  **Common choices**:
+  - ViT-B/16: 16×16 patches (standard)
+  - ViT-L/14: 14×14 patches (better quality)
+  - ViT-H/14: 14×14 patches (largest models)
+</Accordion>
+
+## Real-World Applications
+
+- **Image classification**: ImageNet, medical imaging
+- **Object detection**: DETR (Detection Transformer)
+- **Segmentation**: SegFormer, Mask2Former
+- **Vision-language models**: CLIP, BLIP, LLaVA
+- **Generative models**: Masked autoencoders (MAE)
+
+## Extension: Handling RGB Images
+
+<Note>
+  For color images with RGB channels, each patch would have `patch_size² × 3` values:
+  
+  ```python
+  # Flatten all channels together
+  patch = []
+  for row_offset in range(patch_size):
+      for col_offset in range(patch_size):
+          for channel in [R, G, B]:
+              patch.append(image[row][col][channel])
+  ```
+  
+  A 16×16 RGB patch becomes a 768-dimensional vector.
+</Note>
+
+## Prerequisites
+
+Before starting this week, understand:
+- Week 12: Interpretability and Mechanistic Analysis
+- Week 04-05: Attention and Transformer Architecture
+- Basic image representations (2D arrays, RGB)
+
+## Next Steps
+
+After completing this week, proceed to:
+- **Week 14**: Reinforcement Learning with Transformers - Apply transformers to sequential decision-making

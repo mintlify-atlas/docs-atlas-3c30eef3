@@ -1,0 +1,230 @@
+---
+title: 'Foundations Track (Weeks 1-8)'
+description: 'Mathematical foundations and transformer architecture fundamentals'
+icon: 'square-root-variable'
+---
+
+## Overview
+
+The Foundations Track (Weeks 1-8) builds your understanding from mathematical first principles to complete transformer architectures. By the end of Week 8, you'll understand how modern language models are constructed, trained, and scaled.
+
+<Info>
+  **Time Commitment**: 8 weeks at 10-15 hours per week
+  
+  **Prerequisites**: Basic Python programming, high school algebra
+</Info>
+
+## Learning Arc
+
+The first eight weeks follow a deliberate progression:
+
+1. **Mathematical Foundations** (Weeks 1-2): Build intuition for optimization and linear algebra
+2. **Token Representations** (Week 3): Understand how text becomes vectors
+3. **Attention Mechanics** (Week 4): Master the core innovation of transformers
+4. **Architecture Assembly** (Week 5): Compose complete transformer blocks
+5. **Training Fundamentals** (Weeks 6-7): Learn loss functions, regularization, and generalization
+6. **Scaling Principles** (Week 8): Understand empirical scaling laws and system design
+
+## Weekly Breakdown
+
+<AccordionGroup>
+  <Accordion title="Week 1: Math, Optimization, and Autograd">
+    **Core Formula**: `L(theta) = (theta - 3)^2`
+    
+    Use gradient descent intuition to understand how learning updates move parameters toward lower loss.
+    
+    **Learning Outcomes**:
+    - Derive gradient descent from first principles
+    - Implement a gradient descent runner from scratch
+    - Understand the relationship between loss landscapes and optimization
+    
+    **Coding Challenge**: Implement Gradient Descent Runner (30-45 min)
+    
+    **Key References**:
+    - Stanford CS336: Language Modeling from Scratch
+    - OpenAI Research
+    - Google DeepMind Research
+    
+    <Card title="Start Week 1" href="/weeks/week01-math-optimization-autograd">
+      Begin with mathematical foundations
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 2: Linear Algebra and Probability">
+    **Focus**: Matrix operations, vector spaces, and probabilistic foundations
+    
+    Build the mathematical toolkit needed for understanding transformer operations and training dynamics.
+    
+    **Learning Outcomes**:
+    - Master matrix multiplication and its geometric interpretation
+    - Understand probability distributions in model predictions
+    - Derive backpropagation through linear layers
+    
+    **Coding Challenge**: Focused linear algebra implementation (30-45 min)
+    
+    <Card title="Start Week 2" href="/weeks/week02-linear-algebra-probability">
+      Explore linear algebra foundations
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 3: Tokenization, Embeddings, and Positional Signals">
+    **Core Formula**: `PE(pos, 2i) = sin(pos / 10000^(2i/d_model))`
+    
+    Understand how text becomes token IDs and then position-aware vectors.
+    
+    **Learning Outcomes**:
+    - Implement tokenization from text to integer sequences
+    - Build embedding lookups and understand their role
+    - Derive and implement sinusoidal positional encodings
+    
+    **Coding Challenge**: Build Bigram Token Counts (30-45 min)
+    
+    **Key References**:
+    - Stanford CS336: Language Modeling from Scratch
+    - Stanford CS224N: NLP with Deep Learning
+    - Hugging Face LLM Course
+    
+    <Card title="Start Week 3" href="/weeks/week03-tokenization-embeddings">
+      Learn token representations
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 4: Attention Mechanics">
+    **Focus**: Query-key-value attention and multi-head mechanisms
+    
+    Master the core innovation that powers transformer architectures.
+    
+    **Learning Outcomes**:
+    - Derive scaled dot-product attention from scratch
+    - Understand the geometric interpretation of Q, K, V matrices
+    - Implement multi-head attention with proper masking
+    
+    **Coding Challenge**: Attention mechanism implementation (40-60 min)
+    
+    <Card title="Start Week 4" href="/weeks/week04-attention-mechanics">
+      Master attention mechanics
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 5: Transformer Block Architecture">
+    **Core Formula**: `LayerNorm(x) = (x - mean(x)) / sqrt(var(x) + epsilon)`
+    
+    Trace residual pathways, normalization, and feed-forward composition in a full transformer block.
+    
+    **Learning Outcomes**:
+    - Understand residual connections and gradient flow
+    - Implement layer normalization from scratch
+    - Compose attention, feed-forward, and normalization into complete blocks
+    
+    **Coding Challenge**: Residual + LayerNorm Function (40-60 min)
+    
+    **Key References**:
+    - "Attention Is All You Need" (Vaswani et al., 2017)
+    - PyTorch Transformer Documentation
+    - Jay Alammar's Illustrated Transformer
+    
+    <Card title="Start Week 5" href="/weeks/week05-transformer-architecture">
+      Compose transformer blocks
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 6: Training Loops and Objectives">
+    **Focus**: Loss functions, forward/backward passes, and optimization loops
+    
+    Build complete training pipelines and understand what different loss functions optimize for.
+    
+    **Learning Outcomes**:
+    - Implement cross-entropy loss for language modeling
+    - Build training loops with gradient accumulation
+    - Understand the relationship between loss and model behavior
+    
+    **Coding Challenge**: Training loop implementation (40-60 min)
+    
+    <Card title="Start Week 6" href="/weeks/week06-training-loops-objectives">
+      Learn training fundamentals
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 7: Regularization and Generalization">
+    **Focus**: Dropout, weight decay, early stopping, and generalization theory
+    
+    Prevent overfitting and understand why models generalize beyond training data.
+    
+    **Learning Outcomes**:
+    - Implement various regularization techniques
+    - Understand the bias-variance tradeoff
+    - Monitor validation metrics and detect overfitting
+    
+    **Coding Challenge**: Regularization implementation (40-60 min)
+    
+    <Card title="Start Week 7" href="/weeks/week07-regularization-generalization">
+      Master regularization techniques
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 8: Scaling Laws and System Design">
+    **Core Formula**: `loss(N) = a * N^(-b)`
+    
+    Model empirical loss scaling with token count and estimate power-law exponents.
+    
+    **Learning Outcomes**:
+    - Derive scaling laws from empirical data
+    - Estimate compute-optimal training configurations
+    - Understand the relationship between model size, data, and performance
+    
+    **Coding Challenge**: Estimate Power-Law Exponent (45-60 min)
+    
+    **Key References**:
+    - "Language Models are Few-Shot Learners" (GPT-3 paper)
+    - "Training Compute-Optimal Large Language Models" (Chinchilla paper)
+    - karpathy/nanoGPT
+    - JAX Scaling Book
+    
+    <Card title="Start Week 8" href="/weeks/week08-scaling-laws-system-design">
+      Understand scaling principles
+    </Card>
+  </Accordion>
+</AccordionGroup>
+
+## Key Milestones
+
+By completing the Foundations Track, you will:
+
+<CardGroup cols={2}>
+  <Card title="Mathematical Fluency">
+    Derive and implement gradient descent, attention mechanisms, and normalization from first principles
+  </Card>
+  <Card title="Transformer Mastery">
+    Build complete transformer blocks with attention, feed-forward layers, and residual connections
+  </Card>
+  <Card title="Training Expertise">
+    Design training loops with proper loss functions, regularization, and validation monitoring
+  </Card>
+  <Card title="Scaling Intuition">
+    Understand empirical scaling laws and compute-optimal training configurations
+  </Card>
+</CardGroup>
+
+## Pedagogy Approach
+
+Every week in the Foundations Track follows the rigorous **6-point math standard**:
+
+1. Plain-language intuition
+2. Complete symbol glossary
+3. Step-by-step derivation (no skipped algebra)
+4. Visual graphs and diagrams
+5. Toy numeric walkthrough
+6. Direct formula-to-code mapping
+
+This ensures you build **deep understanding**, not surface-level familiarity.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Begin Week 1" href="/weeks/week01-math-optimization-autograd">
+    Start your foundations journey with optimization and autograd
+  </Card>
+  <Card title="Advanced Track" href="/curriculum/advanced">
+    Preview weeks 9-16: distributed systems, alignment, and specialized domains
+  </Card>
+</CardGroup>

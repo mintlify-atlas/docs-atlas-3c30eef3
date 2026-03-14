@@ -1,0 +1,281 @@
+---
+title: ML Systems & Scaling
+description: Build robust systems and reason about compute-performance tradeoffs
+---
+
+# Realm: ML Systems and Scaling
+
+Build robust data/training/evaluation systems and reason about compute-performance tradeoffs. Learn to design, implement, and optimize ML infrastructure for research and production.
+
+## Core Goal
+
+Master the systems and infrastructure aspects of machine learning. You'll learn to build reproducible training pipelines, profile performance bottlenecks, implement distributed training, and make principled decisions about compute allocation.
+
+## Prerequisites
+
+Before starting this realm, complete:
+
+- **Weeks 1-8**: Foundational material through scaling laws
+- **Week 8**: Scaling Laws and System Design (provides direct context)
+- **Week 9**: Distributed Training and Inference
+- **Week 6**: Training Loops and Objectives
+
+Recommended: Basic understanding of computer architecture and profiling.
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="JAX Scaling Book" href="https://jax-ml.github.io/scaling-book/">
+    Comprehensive guide to scaling ML workloads
+  </Card>
+  
+  <Card title="PyTorch Docs" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Transformer.html">
+    Official framework documentation
+  </Card>
+  
+  <Card title="Chinchilla Paper" href="https://arxiv.org/abs/2203.15556">
+    Scaling laws for optimal model sizing
+  </Card>
+  
+  <Card title="MLPerf" href="https://mlcommons.org/en/">
+    ML performance benchmarks
+  </Card>
+</CardGroup>
+
+## Project Ladder
+
+Progress through three tiers of increasing complexity:
+
+### Short Project (1-2 days)
+
+**Goal**: Profile toy training loop throughput and memory
+
+<Steps>
+  <Step title="Set Up Profiling">
+    Add timing instrumentation to training loop. Use torch.profiler or JAX profiling.
+  </Step>
+  
+  <Step title="Measure Throughput">
+    Compute samples/second and tokens/second. Vary batch size.
+  </Step>
+  
+  <Step title="Profile Memory">
+    Track GPU memory usage over training. Identify peak allocation.
+  </Step>
+  
+  <Step title="Identify Bottlenecks">
+    Find slowest operations. Check data loading vs. compute time.
+  </Step>
+  
+  <Step title="Document Baseline">
+    Create performance report with all metrics. Establish optimization targets.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Instrumented training loop
+- Throughput measurements
+- Memory profiling results
+- Bottleneck analysis
+- Baseline performance report
+
+### Medium Project (3-7 days)
+
+**Goal**: Add distributed-ready config surface and checkpoint strategy
+
+<Steps>
+  <Step title="Design Config System">
+    Create hierarchical config (YAML or dataclasses). Support environment variables and CLI overrides.
+  </Step>
+  
+  <Step title="Implement Checkpointing">
+    Save full training state (model, optimizer, scheduler, RNG). Add async saving.
+  </Step>
+  
+  <Step title="Add Resume Logic">
+    Detect and load latest checkpoint. Verify exact training continuation.
+  </Step>
+  
+  <Step title="Test Distributed Setup">
+    Use torch.distributed or JAX pmap. Test on 2+ GPUs (or simulate).
+  </Step>
+  
+  <Step title="Add Monitoring">
+    Log metrics to TensorBoard/WandB. Track throughput, loss, memory over time.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Hierarchical configuration system
+- Robust checkpointing with tests
+- Resume functionality
+- Multi-GPU training support
+- Monitoring dashboard
+
+### Deep Project (1-2 weeks)
+
+**Goal**: Run controlled scaling experiments with reportable methodology
+
+<Steps>
+  <Step title="Design Scaling Study">
+    Choose variables: model size, batch size, sequence length, number of GPUs. Define fixed compute budget.
+  </Step>
+  
+  <Step title="Implement Optimizations">
+    Add gradient accumulation, mixed precision, gradient checkpointing. Measure impact of each.
+  </Step>
+  
+  <Step title="Run Full Sweep">
+    Execute all configurations. Track loss, throughput, memory, and wall-clock time.
+  </Step>
+  
+  <Step title="Analyze Results">
+    Fit scaling laws. Compute model FLOPs utilization (MFU). Find optimal configurations.
+  </Step>
+  
+  <Step title="Write Technical Report">
+    Document: motivation, methodology, results, tradeoffs, recommendations. Include reproducibility details.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Complete scaling study
+- Optimization impact analysis
+- Fitted scaling laws
+- MFU calculations
+- Technical report with reproducibility guide
+
+## Acceptance Criteria
+
+Your work meets professional standards if:
+
+<AccordionGroup>
+  <Accordion title="Reproducible System Configuration">
+    - All hyperparameters in config files
+    - Environment captured (library versions, hardware specs)
+    - Random seeds set and documented
+    - Exact commands to reproduce provided
+    - Data splits and preprocessing specified
+  </Accordion>
+  
+  <Accordion title="Performance Metrics Include Latency, Throughput, and Memory">
+    - Latency: forward pass, backward pass, optimizer step (ms)
+    - Throughput: samples/sec, tokens/sec, batches/sec
+    - Memory: peak allocation, activation memory, gradient memory (GB)
+    - Model FLOPs Utilization (MFU) computed
+    - All metrics reported with hardware context
+  </Accordion>
+  
+  <Accordion title="Scaling Conclusions Tied to Measured Evidence">
+    - Every claim backed by experimental data
+    - Error bars or confidence intervals included
+    - Outliers explained or excluded with justification
+    - Comparison to published baselines where possible
+    - Limitations and assumptions stated
+  </Accordion>
+</AccordionGroup>
+
+## Key Concepts to Master
+
+- **Performance Profiling**: CPU/GPU utilization, memory bandwidth, kernel efficiency
+- **Optimization Techniques**: Mixed precision, gradient accumulation, checkpointing, fused operations
+- **Distributed Training**: Data parallelism, model parallelism, pipeline parallelism, ZeRO
+- **Scaling Laws**: Power-law relationships, compute-optimal training, Chinchilla scaling
+- **Infrastructure**: Job scheduling, experiment tracking, artifact management
+
+## Common Pitfalls
+
+<Warning>
+**Avoid these mistakes:**
+
+- Optimizing without profiling first
+- Comparing different hardware without normalizing
+- Ignoring data loading bottlenecks
+- Not testing checkpoint recovery
+- Scaling without measuring MFU
+</Warning>
+
+## Implementation Tips
+
+<Accordion title="Profiling Best Practices">
+Profile after warmup (first few iterations are slow). Use framework profilers (torch.profiler, JAX profiler) for kernel-level insights. Focus on the slowest 20% of operations.
+</Accordion>
+
+<Accordion title="Memory Optimization">
+Gradient checkpointing trades compute for memory (recompute activations in backward pass). Mixed precision (fp16/bf16) reduces memory 2x. Batch size is often memory-limited.
+</Accordion>
+
+<Accordion title="Distributed Training">
+Start with data parallelism (easiest). Use model parallelism when model doesn't fit on one GPU. Pipeline parallelism for very large models. ZeRO shards optimizer states.
+</Accordion>
+
+## Performance Optimization Checklist
+
+<Steps>
+  <Step title="Profile Baseline">
+    Measure current performance. Identify bottlenecks.
+  </Step>
+  
+  <Step title="Optimize Data Loading">
+    Use multiple workers, prefetching, pin memory. Target: data loading < 10% of step time.
+  </Step>
+  
+  <Step title="Enable Mixed Precision">
+    Use fp16 or bf16. Verify numerical stability. Expect 2-3x speedup.
+  </Step>
+  
+  <Step title="Tune Batch Size">
+    Increase until OOM or no further speedup. Use gradient accumulation if needed.
+  </Step>
+  
+  <Step title="Add Gradient Checkpointing">
+    If memory-bound. Trades ~30% speed for 50% memory reduction.
+  </Step>
+  
+  <Step title="Use Compiled Models">
+    torch.compile() or JAX jit. Expect 10-20% speedup for transformers.
+  </Step>
+  
+  <Step title="Profile Again">
+    Measure improvements. Iterate on remaining bottlenecks.
+  </Step>
+</Steps>
+
+## Scaling Law Analysis
+
+<Accordion title="Fitting Power Laws">
+Loss typically scales as `L(N, D) = a * N^(-alpha) + b * D^(-beta)` where N is model params and D is data tokens. Fit using log-log regression. Validate on held-out sizes.
+</Accordion>
+
+<Accordion title="Compute-Optimal Training">
+Chinchilla finding: For compute budget C, optimal split is ~50-50 between model size and data. Use `N ~ C^0.5` and `D ~ C^0.5`. Verify on your data.
+</Accordion>
+
+<Accordion title="Model FLOPs Utilization">
+MFU = (observed tokens/sec) / (peak theoretical tokens/sec). Peak depends on hardware and model. Good MFU: 40-60% for transformers. Calculate to assess efficiency.
+</Accordion>
+
+## Integration with Other Realms
+
+ML Systems & Scaling knowledge enables:
+
+- **LLM Systems**: Training large language models efficiently
+- **Vision Transformers**: Scaling vision models to production
+- **Multimodal Alignment**: Training large dual-encoders
+- **All Realms**: Efficient experimentation and resource utilization
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Start Short Project" href="/quickstart">
+    Profile your training loop
+  </Card>
+  
+  <Card title="Review Week 8" href="/weeks/week08-scaling-laws-system-design">
+    Refresh scaling concepts
+  </Card>
+  
+  <Card title="Read JAX Scaling Book" href="https://jax-ml.github.io/scaling-book/">
+    Study distributed training
+  </Card>
+</CardGroup>

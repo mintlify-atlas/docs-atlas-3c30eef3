@@ -1,0 +1,180 @@
+---
+title: 'Models Overview'
+description: 'Multi-framework transformer implementations for the AI Researcher curriculum'
+icon: 'cube'
+---
+
+## Introduction
+
+The AI Researcher curriculum provides **three equivalent transformer language model implementations** across different deep learning frameworks. Each implementation follows the same architecture and configuration, allowing you to compare frameworks and choose based on your preferences.
+
+## Available Implementations
+
+<CardGroup cols={3}>
+  <Card title="PyTorch" href="/api/models/pytorch-transformer">
+    Full-featured language model with encoder layers
+  </Card>
+  <Card title="JAX" href="/api/models/jax-transformer">
+    Pure functional attention mechanism
+  </Card>
+  <Card title="TensorFlow" href="/api/models/tensorflow-transformer">
+    Graph-based attention computation
+  </Card>
+</CardGroup>
+
+## Framework Comparison
+
+| Feature | PyTorch | JAX | TensorFlow |
+|---------|---------|-----|------------|
+| **Abstraction Level** | High (nn.Module) | Low (functions) | Medium (operations) |
+| **Implementation** | Complete model | Attention only | Attention only |
+| **Training Support** | Full | Manual | Manual |
+| **Ease of Use** | Highest | Medium | Medium |
+| **Performance** | Good | Excellent | Good |
+| **Best For** | Rapid prototyping | Research & XLA | Production |
+
+## Common Architecture
+
+All implementations share the same core configuration:
+
+```python
+from ai_researcher_repo.configs import ModelConfig
+
+config = ModelConfig(
+    vocabulary_size=128,
+    context_length=64,
+    embedding_dimension=128,
+    head_count=4,
+    layer_count=4,
+    feed_forward_dimension=256,
+    dropout_probability=0.1
+)
+```
+
+<ParamField path="vocabulary_size" type="int" default="128">
+  Size of the token vocabulary
+</ParamField>
+
+<ParamField path="context_length" type="int" default="64">
+  Maximum sequence length the model can process
+</ParamField>
+
+<ParamField path="embedding_dimension" type="int" default="128">
+  Dimensionality of token and position embeddings
+</ParamField>
+
+<ParamField path="head_count" type="int" default="4">
+  Number of attention heads in each transformer layer
+</ParamField>
+
+<ParamField path="layer_count" type="int" default="4">
+  Number of transformer encoder layers
+</ParamField>
+
+<ParamField path="feed_forward_dimension" type="int" default="256">
+  Hidden dimension of the feed-forward network
+</ParamField>
+
+<ParamField path="dropout_probability" type="float" default="0.1">
+  Dropout probability for regularization
+</ParamField>
+
+## When to Use Each Framework
+
+### Choose PyTorch if:
+- You want a complete, ready-to-train language model
+- You're prototyping quickly and need high-level abstractions
+- You prefer imperative, Python-like code
+- You want built-in training utilities and optimizers
+
+### Choose JAX if:
+- You need maximum performance with XLA compilation
+- You're implementing custom research algorithms
+- You prefer functional programming patterns
+- You want automatic differentiation with `jax.grad`
+
+### Choose TensorFlow if:
+- You're deploying to production with TensorFlow Serving
+- You need graph optimization and distributed training
+- You're integrating with existing TensorFlow pipelines
+- You want cross-platform model deployment
+
+## Architecture Details
+
+### Transformer Encoder
+
+All implementations use a **decoder-only transformer architecture** suitable for autoregressive language modeling:
+
+1. **Token + Position Embeddings**: Combined additive embeddings
+2. **Multi-Head Self-Attention**: Scaled dot-product attention with causal masking
+3. **Feed-Forward Networks**: Two-layer MLP with dropout
+4. **Layer Normalization**: Pre-norm or post-norm configuration
+5. **Output Projection**: Linear layer to vocabulary size
+
+### Causal Masking
+
+The PyTorch implementation uses an upper-triangular attention mask to prevent attending to future tokens:
+
+```python
+attention_mask = torch.triu(
+    torch.ones(sequence_length, sequence_length),
+    diagonal=1
+).bool()
+```
+
+This ensures the model can only use past context for prediction, making it suitable for next-token prediction tasks.
+
+## Quick Start
+
+### PyTorch (Recommended)
+
+```python
+from ai_researcher_repo.configs import ModelConfig
+from ai_researcher_repo.models.transformer_pytorch import (
+    create_tiny_transformer_language_model
+)
+
+config = ModelConfig()
+model = create_tiny_transformer_language_model(config)
+```
+
+### JAX
+
+```python
+from ai_researcher_repo.models.transformer_jax import (
+    scaled_dot_product_attention_jax
+)
+import jax.numpy as jnp
+
+query = jnp.ones((batch_size, seq_len, dim))
+key = jnp.ones((batch_size, seq_len, dim))
+value = jnp.ones((batch_size, seq_len, dim))
+
+output = scaled_dot_product_attention_jax(query, key, value)
+```
+
+### TensorFlow
+
+```python
+from ai_researcher_repo.models.transformer_tensorflow import (
+    scaled_dot_product_attention_tensorflow
+)
+import tensorflow as tf
+
+query = tf.ones((batch_size, seq_len, dim))
+key = tf.ones((batch_size, seq_len, dim))
+value = tf.ones((batch_size, seq_len, dim))
+
+output = scaled_dot_product_attention_tensorflow(query, key, value)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Training Guide" href="/api/training/overview">
+    Learn how to train the PyTorch model
+  </Card>
+  <Card title="Configuration" href="/api/configs">
+    Explore all configuration options
+  </Card>
+</CardGroup>

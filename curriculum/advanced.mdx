@@ -1,0 +1,314 @@
+---
+title: 'Advanced Track (Weeks 9-16)'
+description: 'Distributed training, alignment, interpretability, and specialized AI domains'
+icon: 'rocket'
+---
+
+## Overview
+
+The Advanced Track (Weeks 9-16) takes you from foundational transformer knowledge to research-grade capabilities in distributed systems, safety alignment, interpretability, and specialized domains including computer vision, reinforcement learning, and multimodal systems.
+
+<Info>
+  **Time Commitment**: 8 weeks at 10-15 hours per week
+  
+  **Prerequisites**: Completion of Foundations Track (Weeks 1-8) or equivalent knowledge
+</Info>
+
+## Learning Arc
+
+The advanced curriculum follows a strategic progression:
+
+1. **Systems Scaling** (Week 9): Distributed training and efficient inference
+2. **Evaluation Rigor** (Week 10): Benchmarks, metrics, and statistical validation
+3. **Safety Alignment** (Week 11): Reward modeling and policy regularization
+4. **Interpretability** (Week 12): Mechanistic understanding of model internals
+5. **Specialized Domains** (Weeks 13-15): Vision, RL, and multimodal systems
+6. **Research Capstone** (Week 16): Experiment design and paper reproduction
+
+## Core Advanced Topics (Weeks 9-12)
+
+<AccordionGroup>
+  <Accordion title="Week 9: Distributed Training and Inference">
+    **Core Formula**: `g_avg = (1 / W) * sum(g_worker)`
+    
+    Simulate gradient synchronization and understand why averaging keeps updates stable.
+    
+    **Learning Outcomes**:
+    - Implement data parallelism with gradient averaging
+    - Understand model parallelism and pipeline parallelism
+    - Design efficient inference systems with batching and caching
+    
+    **Coding Challenge**: Average Worker Gradients (30-45 min)
+    
+    **Key References**:
+    - JAX Scaling Book
+    - Distributed training best practices from DeepSpeed and Megatron
+    
+    **Why This Matters**: Modern LLMs require distributed training across hundreds of GPUs. Understanding synchronization primitives and parallelism strategies is essential for research-scale work.
+    
+    <Card title="Start Week 9" href="/weeks/week09-distributed-training-inference">
+      Master distributed systems
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 10: Evaluation and Benchmarks">
+    **Focus**: Metrics, benchmarks, statistical significance, and leaderboard interpretation
+    
+    Learn to rigorously evaluate model capabilities and understand what benchmarks actually measure.
+    
+    **Learning Outcomes**:
+    - Implement perplexity, BLEU, ROUGE, and task-specific metrics
+    - Understand benchmark construction and potential biases
+    - Conduct statistical significance testing for model comparisons
+    
+    **Coding Challenge**: Benchmark evaluation pipeline (40-60 min)
+    
+    **Key Topics**:
+    - Language modeling metrics (perplexity, bits-per-character)
+    - Generation quality (BLEU, ROUGE, BERTScore)
+    - Reasoning benchmarks (MMLU, GSM8K, HumanEval)
+    - Contamination detection and dataset leakage
+    
+    <Card title="Start Week 10" href="/weeks/week10-evaluation-benchmarks">
+      Learn rigorous evaluation
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 11: Alignment and Safety Objectives">
+    **Core Formula**: `J = E_pi[r] - beta * KL(pi || pi_ref)`
+    
+    Study how reward optimization is balanced by policy regularization terms.
+    
+    **Learning Outcomes**:
+    - Understand RLHF (Reinforcement Learning from Human Feedback)
+    - Implement KL-regularized reward objectives
+    - Explore constitutional AI and value alignment approaches
+    
+    **Coding Challenge**: KL-Regularized Objective (40-60 min)
+    
+    **Key References**:
+    - Anthropic Research on constitutional AI
+    - OpenAI Research on RLHF and InstructGPT
+    - Lilian Weng's blog on alignment techniques
+    
+    **Safety Considerations**:
+    - Reward hacking and specification gaming
+    - Value alignment and intent inference
+    - Robustness to adversarial inputs
+    
+    <Card title="Start Week 11" href="/weeks/week11-alignment-safety">
+      Explore alignment and safety
+    </Card>
+  </Accordion>
+
+  <Accordion title="Week 12: Interpretability and Mechanistic Understanding">
+    **Focus**: Attention visualization, activation analysis, and circuit discovery
+    
+    Open the black box: understand what transformer models are actually computing.
+    
+    **Learning Outcomes**:
+    - Visualize and interpret attention patterns
+    - Conduct activation patching and causal interventions
+    - Identify interpretable features and circuits
+    
+    **Coding Challenge**: Attention analysis and interpretation (45-60 min)
+    
+    **Key Techniques**:
+    - Attention head analysis and pattern discovery
+    - Logit lens and residual stream analysis
+    - Mechanistic interpretability and circuit extraction
+    - Feature visualization and neuron analysis
+    
+    **Research Frontier**: This week connects to cutting-edge work at Anthropic (dictionary learning), OpenAI (superposition), and independent researchers (mechanistic interpretability).
+    
+    <Card title="Start Week 12" href="/weeks/week12-interpretability-mechanistic">
+      Investigate model internals
+    </Card>
+  </Accordion>
+</AccordionGroup>
+
+## Specialized Domain Tracks (Weeks 13-15)
+
+<Tabs>
+  <Tab title="Computer Vision (Week 13)">
+    **Core Formula**: `patch_count = (height / patch_size) * (width / patch_size)`
+    
+    ### Vision Transformers
+    
+    Patchify images and reason about how ViT-style tokenization works.
+    
+    **Learning Outcomes**:
+    - Implement image patchification and positional embeddings
+    - Understand Vision Transformer (ViT) architecture
+    - Compare convolutional vs. attention-based vision models
+    
+    **Coding Challenge**: Image Patchifier (40-60 min)
+    
+    **Key Topics**:
+    - Patch embeddings and CLS tokens
+    - Hybrid architectures (ConvNets + Transformers)
+    - Object detection with DETR
+    - Segmentation with Mask2Former
+    
+    **Key References**:
+    - Meta AI Blog on vision research
+    - "An Image is Worth 16x16 Words" (ViT paper)
+    - DETR and Swin Transformer papers
+    
+    <Card title="Start Week 13" href="/weeks/week13-computer-vision-transformers">
+      Explore vision transformers
+    </Card>
+  </Tab>
+  
+  <Tab title="Reinforcement Learning (Week 14)">
+    ### RL with Transformers
+    
+    Apply transformer architectures to sequential decision-making and reinforcement learning.
+    
+    **Learning Outcomes**:
+    - Implement Decision Transformers
+    - Understand offline RL and trajectory modeling
+    - Connect language modeling to policy learning
+    
+    **Coding Challenge**: Transformer-based RL agent (45-60 min)
+    
+    **Key Topics**:
+    - Decision Transformers and Trajectory Transformers
+    - Return-conditioned policies
+    - Multi-task RL with transformer backbones
+    - Prompt-based control and in-context learning for RL
+    
+    **Why This Matters**: The connection between language modeling and RL is fundamental to understanding systems like ChatGPT (RLHF), code generation agents, and autonomous decision-making systems.
+    
+    <Card title="Start Week 14" href="/weeks/week14-reinforcement-learning-transformers">
+      Apply transformers to RL
+    </Card>
+  </Tab>
+  
+  <Tab title="Multimodal Systems (Week 15)">
+    ### Multimodal Foundations
+    
+    Cross-modal alignment, vision-language models, and unified representation learning.
+    
+    **Learning Outcomes**:
+    - Implement contrastive learning objectives (CLIP-style)
+    - Understand cross-attention between modalities
+    - Build vision-language models for retrieval and generation
+    
+    **Coding Challenge**: Multimodal alignment (45-60 min)
+    
+    **Key Topics**:
+    - Contrastive pre-training (CLIP, ALIGN)
+    - Vision-language generation (Flamingo, BLIP)
+    - Audio-visual learning
+    - Unified multimodal architectures
+    
+    **Research Applications**:
+    - Image captioning and VQA
+    - Text-to-image generation guidance
+    - Embodied AI and robotics
+    
+    <Card title="Start Week 15" href="/weeks/week15-multimodal-foundations">
+      Learn multimodal foundations
+    </Card>
+  </Tab>
+</Tabs>
+
+## Research Capstone (Week 16)
+
+<Card title="Week 16: Research Capstone and Experiment Design">
+  **Core Formula**: `CI = [percentile(alpha/2), percentile(1 - alpha/2)]`
+  
+  ### Culminating Project
+  
+  Summarize experiment variability with bootstrap confidence intervals and conduct rigorous research.
+  
+  **Learning Outcomes**:
+  - Design and execute research experiments
+  - Reproduce results from recent AI papers
+  - Compute confidence intervals and statistical significance
+  - Document findings with academic rigor
+  
+  **Coding Challenge**: Bootstrap Confidence Interval (45-60 min)
+  
+  **Capstone Activities**:
+  1. Choose a recent AI paper (from OpenAI, Anthropic, DeepMind, etc.)
+  2. Reproduce core experimental results
+  3. Conduct ablation studies
+  4. Validate findings with statistical tests
+  5. Document methodology and insights
+  
+  **Key Skills**:
+  - Experimental design and hypothesis testing
+  - Reproducibility and open science practices
+  - Technical writing and documentation
+  - Version control and experiment tracking
+  
+  <Card title="Start Week 16" href="/weeks/week16-research-capstone">
+    Begin your research capstone
+  </Card>
+</Card>
+
+## Realm Deep Dives
+
+After completing the 16-week curriculum, continue with specialized realm guides:
+
+<CardGroup cols={2}>
+  <Card title="LLM Systems" href="/realms/llm-systems">
+    Production deployment, serving optimization, and prompt engineering
+  </Card>
+  <Card title="Vision Transformers" href="/realms/vision-transformers">
+    Advanced vision architectures and video understanding
+  </Card>
+  <Card title="RL Sequence Models" href="/realms/rl-sequence-models">
+    Deep dive into decision transformers and offline RL
+  </Card>
+  <Card title="Multimodal Alignment" href="/realms/multimodal-alignment">
+    Advanced cross-modal learning and unified representations
+  </Card>
+  <Card title="Alignment & Safety" href="/realms/alignment-safety">
+    Constitutional AI, value learning, and robustness
+  </Card>
+  <Card title="Interpretability" href="/realms/interpretability">
+    Mechanistic interpretability and circuit discovery
+  </Card>
+  <Card title="ML Systems & Scaling" href="/realms/ml-systems-scaling">
+    Infrastructure, optimization, and large-scale training
+  </Card>
+</CardGroup>
+
+## Key Achievements
+
+By completing the Advanced Track, you will:
+
+<CardGroup cols={2}>
+  <Card title="Systems Expertise">
+    Design and implement distributed training pipelines for large-scale models
+  </Card>
+  <Card title="Research Fluency">
+    Reproduce papers, design experiments, and validate results statistically
+  </Card>
+  <Card title="Safety Awareness">
+    Understand alignment techniques, reward modeling, and safety considerations
+  </Card>
+  <Card title="Interpretability Skills">
+    Analyze model internals, discover circuits, and explain model behavior
+  </Card>
+  <Card title="Domain Versatility">
+    Apply transformers to vision, RL, and multimodal problems
+  </Card>
+  <Card title="Research Capability">
+    Execute independent research projects with academic rigor
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Begin Week 9" href="/weeks/week09-distributed-training-inference">
+    Start the advanced track with distributed training
+  </Card>
+  <Card title="Explore Realms" href="/realms/overview">
+    Continue learning with specialized deep dives
+  </Card>
+</CardGroup>

@@ -1,0 +1,165 @@
+---
+title: "Week 06: Training Loops and Objectives"
+description: "Connect probability targets, label smoothing, and optimization stability in training loops"
+---
+
+## Module Focus
+
+Connect probability targets, label smoothing, and optimization stability in training loops.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Explain and derive the core formula">
+    Understand `y_smooth = (1 - epsilon) * y_one_hot + epsilon / K` in plain language.
+  </Step>
+  <Step title="Translate formula to code">
+    Convert label smoothing to readable, testable Python.
+  </Step>
+  <Step title="Solve the coding challenge">
+    Create label smoothed distributions in 30-45 minutes.
+  </Step>
+</Steps>
+
+## Core Formula
+
+```
+y_smooth = (1 - epsilon) * y_one_hot + epsilon / K
+```
+
+## Mathematical Intuition
+
+Label smoothing prevents overconfident spikes and often improves generalization.
+
+<Accordion title="Symbol Glossary">
+  - **epsilon**: smoothing factor (typically 0.1 - 0.2)
+  - **K**: number of classes in vocabulary
+  - **y_one_hot**: hard target vector (1 for correct class, 0 elsewhere)
+  - **y_smooth**: softened target vector
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Start from one-hot">
+    Begin with a hard target distribution (1.0 at target, 0.0 elsewhere).
+  </Step>
+  <Step title="Distribute smoothing mass">
+    Allocate `epsilon / K` probability mass uniformly across all classes.
+  </Step>
+  <Step title="Blend distributions">
+    The target class gets `(1 - epsilon) + epsilon / K`, others get `epsilon / K`.
+  </Step>
+</Steps>
+
+## Why Label Smoothing?
+
+<Info>
+Label smoothing prevents the model from becoming overconfident. It:
+- Reduces overfitting by not forcing predictions to 0 or 1
+- Improves calibration of predicted probabilities
+- Often increases generalization to validation/test sets
+- Prevents infinite cross-entropy loss from overconfident wrong predictions
+</Info>
+
+## Toy Example Walkthrough
+
+1. With `K=4` and `epsilon=0.2`, uniform contribution is `0.05`
+2. Target class gets `0.85` (= `0.8 + 0.05`)
+3. Distribution sums to 1 and is less brittle than one-hot
+
+### Implementation
+
+```python
+from __future__ import annotations
+
+def run_toy_example() -> dict[str, float]:
+    class_count = 4
+    target_index = 1
+    smoothing_factor = 0.2
+    distribution = [smoothing_factor / class_count for _ in range(class_count)]
+    distribution[target_index] += 1.0 - smoothing_factor
+    return {
+        "primary_metric": distribution[target_index],
+        "secondary_metric": sum(distribution),
+    }
+```
+
+## Coding Challenge
+
+<Card title="Label Smoothed Distribution">
+  **Goal**: Implement `label_smoothed_distribution` with a target class boost.
+  
+  **Time**: 30-45 minutes
+  
+  **Requirements**:
+  - Create uniform base distribution of `epsilon / K`
+  - Add `1 - epsilon` to the target class
+  - Ensure distribution sums to 1.0
+  - Keep function names and parameter names explicit
+</Card>
+
+<Accordion title="Reference Solution">
+```python
+from __future__ import annotations
+
+def label_smoothed_distribution(
+    class_count: int,
+    target_index: int,
+    smoothing_factor: float,
+) -> list[float]:
+    distribution = [smoothing_factor / class_count for _ in range(class_count)]
+    distribution[target_index] += 1.0 - smoothing_factor
+    return distribution
+```
+</Accordion>
+
+## Formula to Code Mapping
+
+- Uniform base distribution maps to list filled with `epsilon / class_count`
+- Target class boost maps to adding `1 - epsilon` at `target_index`
+- Final distribution automatically sums to 1.0
+
+## Training Loop Context
+
+Label smoothing is applied during loss computation:
+
+```python
+# Instead of:
+loss = cross_entropy(predictions, one_hot_targets)
+
+# Use:
+smoothed_targets = label_smoothed_distribution(...)
+loss = cross_entropy(predictions, smoothed_targets)
+```
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="karpathy/nanoGPT" href="https://github.com/karpathy/nanoGPT">
+    Minimal GPT Implementation
+  </Card>
+  <Card title="PyTorch Transformer" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Transformer.html">
+    Official Documentation
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Read math_walkthrough.md">
+    Reproduce derivation steps on paper
+  </Step>
+  <Step title="Run toy_example.py">
+    Verify distribution sums to 1.0
+  </Step>
+  <Step title="Implement problem.py">
+    Build label smoothing from scratch
+  </Step>
+  <Step title="Validate with tests">
+    Unskip exercise tests and run pytest
+  </Step>
+  <Step title="Compare and reflect">
+    Review the reference solution and write a short reflection
+  </Step>
+</Steps>

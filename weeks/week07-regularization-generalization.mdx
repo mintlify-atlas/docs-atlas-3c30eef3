@@ -1,0 +1,180 @@
+---
+title: "Week 07: Regularization and Generalization"
+description: "Understand how dropout-like mechanisms reduce co-adaptation and improve robustness"
+---
+
+## Module Focus
+
+Understand how dropout-like mechanisms reduce co-adaptation and improve robustness.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Explain and derive the core formula">
+    Understand `x_dropout = (mask * x) / keep_probability` in plain language.
+  </Step>
+  <Step title="Translate formula to code">
+    Convert inverted dropout to readable, testable Python.
+  </Step>
+  <Step title="Solve the coding challenge">
+    Implement inverted dropout in 30-45 minutes.
+  </Step>
+</Steps>
+
+## Core Formula
+
+```
+x_dropout = (mask * x) / keep_probability
+```
+
+## Mathematical Intuition
+
+Inverted dropout preserves expected activation scale while randomly removing feature pathways.
+
+<Accordion title="Symbol Glossary">
+  - **mask**: binary keep/drop indicators (1 = keep, 0 = drop)
+  - **keep_probability**: fraction of units kept (e.g., 0.75 = drop 25%)
+  - **x**: activation vector
+  - **x_dropout**: regularized activation vector
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Apply binary mask">
+    Multiply activations by binary mask (randomly zero out some values).
+  </Step>
+  <Step title="Scale surviving activations">
+    Divide by keep probability to maintain expected value.
+  </Step>
+  <Step title="Maintain expectations">
+    Expected value across training steps stays constant.
+  </Step>
+</Steps>
+
+## Why Inverted Dropout?
+
+<Info>
+**Inverted dropout** scales during training so that inference requires no changes:
+
+- **Training**: Apply mask and scale by `1/keep_prob`
+- **Inference**: Use activations as-is (no scaling needed)
+
+This is better than standard dropout which requires scaling at inference time.
+</Info>
+
+## Toy Example Walkthrough
+
+1. Input activations: `[2, 4, 6, 8]`
+2. Mask: `[1, 0, 1, 1]` and keep probability `0.75`
+3. Output: `[2/0.75, 0, 6/0.75, 8/0.75] = [2.67, 0, 8.0, 10.67]`
+4. Expected value is preserved after scaling
+
+### Implementation
+
+```python
+from __future__ import annotations
+
+def run_toy_example() -> dict[str, float]:
+    activations = [2.0, 4.0, 6.0, 8.0]
+    keep_mask = [1, 0, 1, 1]
+    keep_probability = 0.75
+    dropped = [
+        activation * mask / keep_probability
+        for activation, mask in zip(activations, keep_mask)
+    ]
+    return {
+        "primary_metric": sum(dropped) / len(dropped),
+        "secondary_metric": sum(activations) / len(activations),
+    }
+```
+
+## Coding Challenge
+
+<Card title="Inverted Dropout Operator">
+  **Goal**: Implement inverted dropout given values, keep mask, and keep probability.
+  
+  **Time**: 30-45 minutes
+  
+  **Requirements**:
+  - Multiply values by binary mask element-wise
+  - Scale by `1 / keep_probability`
+  - Return regularized activation vector
+  - Keep function names and parameter names explicit
+</Card>
+
+<Accordion title="Reference Solution">
+```python
+from __future__ import annotations
+
+def apply_inverted_dropout(
+    values: list[float],
+    keep_mask: list[int],
+    keep_probability: float,
+) -> list[float]:
+    return [
+        value * mask / keep_probability
+        for value, mask in zip(values, keep_mask)
+    ]
+```
+</Accordion>
+
+## Formula to Code Mapping
+
+- Masking maps to elementwise multiplication with binary values
+- Inverted scaling maps to division by keep probability
+- Result maintains expected activation scale
+
+## Dropout Benefits
+
+Dropout helps prevent overfitting by:
+
+1. **Reducing co-adaptation** - neurons can't rely on specific other neurons
+2. **Ensemble effect** - each forward pass is like training a different subnetwork
+3. **Feature redundancy** - forces learning of robust, redundant representations
+4. **Improved generalization** - typically reduces validation/test error
+
+## When to Use Dropout
+
+<Warning>
+Modern transformers often use **less dropout** than earlier architectures:
+- Attention dropout: 0.0 - 0.1
+- Residual dropout: 0.0 - 0.1
+- Very large models may use no dropout at all
+
+Other regularization techniques (weight decay, gradient clipping) are often more important.
+</Warning>
+
+## Reference Materials
+
+<CardGroup cols={3}>
+  <Card title="Stanford CS336" href="https://cs336.stanford.edu/">
+    Language Modeling from Scratch
+  </Card>
+  <Card title="OpenAI Research" href="https://openai.com/research/">
+    Latest AI Research
+  </Card>
+  <Card title="DeepMind Research" href="https://deepmind.google/research/">
+    Foundational AI Papers
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Read math_walkthrough.md">
+    Reproduce derivation steps on paper
+  </Step>
+  <Step title="Run toy_example.py">
+    Verify expected values are preserved
+  </Step>
+  <Step title="Implement problem.py">
+    Build inverted dropout from scratch
+  </Step>
+  <Step title="Validate with tests">
+    Unskip exercise tests and run pytest
+  </Step>
+  <Step title="Compare and reflect">
+    Review the reference solution and write a short reflection
+  </Step>
+</Steps>

@@ -1,0 +1,264 @@
+---
+title: "Week 11: Alignment and Safety Objectives"
+description: "Study how reward optimization is balanced by policy regularization terms"
+---
+
+## Module Focus
+
+Study how reward optimization is balanced by policy regularization terms to prevent models from drifting into unsafe behaviors.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Understand KL Regularization">
+    Learn why KL divergence penalties keep policies anchored to trusted reference models
+  </Step>
+  
+  <Step title="Derive the Objective">
+    Master the formula: `J = E_pi[r] - beta * KL(pi || pi_ref)`
+  </Step>
+  
+  <Step title="Implement Safety Controls">
+    Build a KL-regularized objective function in 40-60 minutes
+  </Step>
+</Steps>
+
+## Core Concept: KL Regularization
+
+KL penalties discourage the policy from drifting too far from a trusted reference model:
+
+```
+J = E_pi[r] - beta * KL(pi || pi_ref)
+```
+
+This balances **reward maximization** with **safety constraints**.
+
+### Symbol Glossary
+
+- **pi**: Current policy distribution over actions
+- **pi_ref**: Reference policy distribution (trusted baseline)
+- **r**: Reward per action
+- **beta**: KL penalty strength (higher = more conservative)
+- **J**: Overall objective to maximize
+
+### Why This Matters
+
+<Note>
+  Without regularization, reinforcement learning can lead to reward hacking where models find unexpected ways to maximize rewards that violate safety constraints or designer intent.
+</Note>
+
+<Accordion title="Intuition: Safety Through Anchoring">
+  Imagine training a chatbot with reinforcement learning:
+  
+  - **Without KL penalty**: Model might learn to generate responses that hack the reward model (e.g., extremely long repetitive text that exploits scoring bugs)
+  
+  - **With KL penalty**: Model is constrained to stay close to the reference policy (e.g., a supervised-trained base model), only making gradual improvements
+  
+  The penalty ensures changes are incremental and reviewable, not chaotic.
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Compute Expected Reward">
+    Calculate the expected reward under the current policy:
+    ```
+    E_pi[r] = sum(pi(a) * r(a) for all actions a)
+    ```
+  </Step>
+  
+  <Step title="Compute KL Divergence">
+    Measure how much the policy has shifted from reference:
+    ```
+    KL(pi || pi_ref) = sum(pi(a) * log(pi(a) / pi_ref(a)))
+    ```
+  </Step>
+  
+  <Step title="Combine with Penalty">
+    Subtract the weighted KL penalty from the reward objective:
+    ```
+    J = E_pi[r] - beta * KL(pi || pi_ref)
+    ```
+  </Step>
+</Steps>
+
+## Coding Challenge: KL-Regularized Objective
+
+**Duration**: 40-60 minutes
+
+### Problem Statement
+
+Implement `kl_regularized_objective` for policy optimization with a safety penalty.
+
+### Starter Code
+
+Location: `week11_alignment_safety/problem.py`
+
+```python
+from __future__ import annotations
+
+import math
+
+
+def kl_regularized_objective(
+    policy_probabilities: list[float],
+    reference_probabilities: list[float],
+    rewards: list[float],
+    regularization_beta: float,
+) -> float:
+    # Return expected reward minus beta-scaled KL divergence.
+    raise NotImplementedError("Implement kl_regularized_objective")
+```
+
+### Requirements
+
+- Compute expected reward under policy
+- Calculate KL divergence from reference
+- Return regularized objective value
+- Handle numerical edge cases (e.g., zero probabilities)
+
+### Example Implementation
+
+<Accordion title="Reference Solution">
+  ```python
+  def kl_regularized_objective(
+      policy_probabilities: list[float],
+      reference_probabilities: list[float],
+      rewards: list[float],
+      regularization_beta: float,
+  ) -> float:
+      expected_reward = sum(
+          probability * reward
+          for probability, reward in zip(policy_probabilities, rewards)
+      )
+      kl_divergence = sum(
+          probability * math.log(probability / reference_probability)
+          for probability, reference_probability in zip(
+              policy_probabilities,
+              reference_probabilities,
+          )
+          if probability > 0.0
+      )
+      return expected_reward - regularization_beta * kl_divergence
+  ```
+  
+  **Key insights:**
+  - Expected reward is a weighted sum over actions
+  - KL divergence uses natural logarithm
+  - Skip zero-probability actions to avoid log(0)
+  - Beta controls the safety-performance tradeoff
+</Accordion>
+
+### Toy Example
+
+```python
+policy    = [0.6, 0.3, 0.1]
+reference = [0.5, 0.4, 0.1]
+rewards   = [1.0, 0.2, -0.3]
+beta      = 0.1
+
+# Expected reward:
+# E[r] = 0.6*1.0 + 0.3*0.2 + 0.1*(-0.3) = 0.63
+
+# KL divergence:
+# KL = 0.6*log(0.6/0.5) + 0.3*log(0.3/0.4) + 0.1*log(0.1/0.1)
+#    ≈ 0.6*0.182 + 0.3*(-0.288) + 0.1*0
+#    ≈ 0.0228
+
+# Objective:
+# J = 0.63 - 0.1*0.0228 ≈ 0.6277
+```
+
+The objective decreases slightly after the KL penalty, encouraging conservative policy updates.
+
+<Warning>
+  **Numerical Stability**: When `probability = 0`, skip the KL term to avoid computing `log(0)`. The limit as p→0 of p*log(p) is 0.
+</Warning>
+
+## Validation
+
+<CodeGroup>
+```bash Reference Tests
+pytest tests/test_problem_solution.py
+```
+
+```bash Exercise Tests
+# Unskip tests first, then run:
+pytest tests/test_problem_exercise.py
+```
+</CodeGroup>
+
+## Reference Materials
+
+<CardGroup cols={3}>
+  <Card title="Anthropic Research" href="https://www.anthropic.com/research">
+    Constitutional AI and RLHF safety research
+  </Card>
+  
+  <Card title="OpenAI Research" href="https://openai.com/research/">
+    Alignment research including RLHF and InstructGPT
+  </Card>
+  
+  <Card title="Lilian Weng Blog" href="https://lilianweng.github.io/">
+    In-depth posts on RLHF, alignment, and safety
+  </Card>
+</CardGroup>
+
+## The Role of Beta
+
+<Accordion title="Tuning the Safety-Performance Tradeoff">
+  The `beta` parameter controls how conservative the policy updates are:
+  
+  - **beta = 0**: No safety constraint, pure reward maximization (dangerous)
+  - **beta → ∞**: Policy frozen at reference (too conservative)
+  - **beta ≈ 0.01-0.1**: Typical range for RLHF in language models
+  
+  Larger beta means:
+  - Slower learning
+  - Safer exploration
+  - Less reward hacking
+  - More stable training
+</Accordion>
+
+## Suggested Weekly Workflow
+
+<Steps>
+  <Step title="Study the Math">
+    Read `math_walkthrough.md` and understand the KL divergence formula
+  </Step>
+  
+  <Step title="Run Toy Example">
+    Execute `toy_example.py` and verify the objective decreases with higher beta
+  </Step>
+  
+  <Step title="Implement Solution">
+    Complete `problem.py` with numerical stability considerations
+  </Step>
+  
+  <Step title="Test Your Code">
+    Unskip exercise tests and validate edge cases
+  </Step>
+  
+  <Step title="Compare and Reflect">
+    Review `solution.py` and consider: when would you increase/decrease beta?
+  </Step>
+</Steps>
+
+## Real-World Applications
+
+- **RLHF for ChatGPT**: Prevents language models from generating harmful content
+- **PPO (Proximal Policy Optimization)**: Uses a similar KL constraint
+- **Constitutional AI**: Combines multiple safety objectives with KL regularization
+- **Fine-tuning alignment**: Keeps domain-adapted models aligned with base values
+
+## Prerequisites
+
+Before starting this week, understand:
+- Week 10: Evaluation and Benchmarking
+- Probability distributions and expectations
+- Basic information theory (entropy, KL divergence)
+
+## Next Steps
+
+After completing this week, proceed to:
+- **Week 12**: Interpretability and Mechanistic Analysis - Learn to inspect what models learn

@@ -1,0 +1,319 @@
+---
+title: "Datasets"
+description: "Dataset policy, available datasets, and data preparation guidelines"
+---
+
+## Dataset Philosophy
+
+The curriculum follows a **toy-by-default, opt-in-for-scale** approach to datasets. This ensures:
+- Fast iteration during development
+- Safe CI/CD without expensive compute
+- Clear boundaries between learning and production-scale training
+
+<Note>
+Tests and default configurations **never** launch full-dataset training jobs. Large-scale experiments are explicit opt-in only.
+</Note>
+
+## Default Local-Safe Datasets
+
+These datasets run locally, train quickly, and require no special setup:
+
+### Synthetic Character Corpus
+
+<Accordion title="Generated Locally">
+  **Purpose:** Unit testing and quick iteration
+  
+  **Characteristics:**
+  - Generated on-the-fly from code
+  - Deterministic for reproducible tests
+  - No download required
+  - Ideal for validating tokenizer and embedding logic
+  
+  **Use Cases:**
+  - Unit tests for tokenization
+  - Embedding layer verification
+  - Quick sanity checks
+  
+  **Example:**
+  ```python
+  # Synthetic character-level corpus
+  synthetic_text = "abcdefghijklmnopqrstuvwxyz" * 100
+  ```
+</Accordion>
+
+### Tiny Shakespeare
+
+<Accordion title="Small Open Text Corpus">
+  **Purpose:** Toy language modeling experiments
+  
+  **Characteristics:**
+  - ~1MB text file
+  - Complete works of Shakespeare
+  - Character-level or BPE tokenization
+  - Fast training on CPU or single GPU
+  
+  **Use Cases:**
+  - Week 6: First training loops
+  - Week 7: Regularization experiments
+  - Quick architecture validation
+  
+  **Download:**
+  ```bash
+  wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+  ```
+  
+  **Training Time:** ~5-10 minutes on CPU for small models
+</Accordion>
+
+### WikiText Compact Subsets
+
+<Accordion title="Optional Toy Experiments">
+  **Purpose:** Slightly larger vocabulary and structure
+  
+  **Characteristics:**
+  - WikiText-2 (~2MB) or WikiText-103 (~500MB)
+  - Preprocessed Wikipedia articles
+  - Word-level or subword tokenization
+  - Still manageable on local hardware
+  
+  **Use Cases:**
+  - Week 8: Small-scale scaling experiments
+  - Week 10: Evaluation benchmark baselines
+  
+  **Access:**
+  ```python
+  from torchtext.datasets import WikiText2, WikiText103
+  train_iter = WikiText2(split='train')
+  ```
+</Accordion>
+
+## Larger Opt-In Dataset Paths
+
+These datasets are available for serious training experiments but require explicit configuration:
+
+<Warning>
+Large datasets are **never** default. They require:
+- Explicit configuration flags
+- Download confirmation
+- Adequate compute resources
+- Understanding of storage requirements
+</Warning>
+
+### The Pile Subsets
+
+<CardGroup cols={1}>
+  <Card title="The Pile">
+    **Size:** 825GB uncompressed (full), various subsets available
+    
+    **Description:** Diverse text corpus including books, code, academic papers
+    
+    **Access:** https://pile.eleuther.ai/
+    
+    **Recommended Subsets:**
+    - PubMed Abstracts (~20GB) - scientific text
+    - GitHub subset (~95GB) - code
+    - Books3 (~100GB) - long-form text
+    
+    **Use Cases:**
+    - Week 8: Real scaling law experiments
+    - Week 16: Capstone research projects
+    
+    **Opt-In Command:**
+    ```bash
+    python train.py --dataset pile --subset pubmed --confirm-large-dataset
+    ```
+  </Card>
+</CardGroup>
+
+### C4 (Colossal Clean Crawled Corpus)
+
+<CardGroup cols={1}>
+  <Card title="C4">
+    **Size:** ~750GB (en variant)
+    
+    **Description:** Cleaned Common Crawl web text used for T5 training
+    
+    **Access:** Available through Hugging Face Datasets
+    
+    **Characteristics:**
+    - High-quality web text
+    - Pre-filtered for quality
+    - Multiple language variants
+    
+    **Use Cases:**
+    - Week 9: Distributed training practice
+    - Large-scale pretraining experiments
+    
+    **Opt-In Command:**
+    ```python
+    from datasets import load_dataset
+    # Requires explicit confirmation flag
+    dataset = load_dataset("c4", "en", split="train", streaming=True)
+    ```
+  </Card>
+</CardGroup>
+
+### OpenWebText Derivatives
+
+<CardGroup cols={1}>
+  <Card title="OpenWebText">
+    **Size:** ~40GB
+    
+    **Description:** Recreation of WebText (GPT-2 training data) from Reddit links
+    
+    **Access:** https://github.com/jcpeterson/openwebtext
+    
+    **Characteristics:**
+    - High-quality web text filtered by Reddit upvotes
+    - Smaller than C4, higher quality than raw crawls
+    - Good balance for mid-scale experiments
+    
+    **Use Cases:**
+    - Week 7: Regularization on realistic data
+    - Week 10: Evaluation on held-out web text
+    
+    **Opt-In Command:**
+    ```bash
+    python train.py --dataset openwebtext --confirm-large-dataset
+    ```
+  </Card>
+</CardGroup>
+
+## Data Preparation Workflow
+
+### 1. Download and Verify
+
+```python
+import hashlib
+
+def verify_download(filepath: str, expected_hash: str) -> bool:
+    """Verify downloaded dataset integrity."""
+    with open(filepath, 'rb') as f:
+        file_hash = hashlib.sha256(f.read()).hexdigest()
+    return file_hash == expected_hash
+```
+
+### 2. Tokenization
+
+<Accordion title="Tokenization Pipeline">
+  **Steps:**
+  1. Load raw text data
+  2. Train or load tokenizer (BPE, WordPiece, etc.)
+  3. Tokenize corpus
+  4. Save tokenized indices
+  
+  **Example:**
+  ```python
+  from tokenizers import ByteLevelBPETokenizer
+  
+  # Train tokenizer
+  tokenizer = ByteLevelBPETokenizer()
+  tokenizer.train(
+      files=["data/raw/corpus.txt"],
+      vocab_size=32000,
+      min_frequency=2
+  )
+  
+  # Save for reuse
+  tokenizer.save_model("data/tokenizers/")
+  ```
+</Accordion>
+
+### 3. Preprocessing and Chunking
+
+<Accordion title="Efficient Data Loading">
+  **Strategies:**
+  - **Memory-mapped arrays:** For large datasets that don't fit in RAM
+  - **Sharding:** Split data across multiple files for distributed training
+  - **Streaming:** Load data on-the-fly without full download
+  
+  **Example:**
+  ```python
+  import numpy as np
+  
+  # Memory-mapped tokenized data
+  token_ids = np.memmap(
+      'data/processed/tokens.bin',
+      dtype=np.uint16,
+      mode='r'
+  )
+  
+  # Chunk into sequences
+  def get_batch(offset: int, batch_size: int, seq_len: int):
+      indices = offset + np.arange(batch_size) * seq_len
+      batch = np.stack([token_ids[i:i+seq_len] for i in indices])
+      return batch
+  ```
+</Accordion>
+
+### 4. Validation Split
+
+<Accordion title="Held-Out Data">
+  **Best Practices:**
+  - Reserve 1-5% for validation
+  - Ensure validation split is representative
+  - Never touch test set during development
+  
+  **Example:**
+  ```python
+  from sklearn.model_selection import train_test_split
+  
+  train_data, val_data = train_test_split(
+      full_dataset,
+      test_size=0.05,
+      random_state=42
+  )
+  ```
+</Accordion>
+
+## Safety Guardrails
+
+<Note>
+**Protection Mechanisms:**
+
+1. **Configuration flags:** Large datasets require explicit `--confirm-large-dataset`
+2. **Size warnings:** CLI warns before downloading >1GB
+3. **Test isolation:** Tests use synthetic or tiny datasets only
+4. **CI defaults:** GitHub Actions never download large data
+</Note>
+
+## Using Larger Datasets
+
+When you're ready to scale:
+
+1. **Verify resources:**
+   - Storage: >100GB free for Pile/C4
+   - Compute: Multi-GPU setup recommended
+   - Time: Budget hours or days for training
+
+2. **Enable opt-in:**
+   ```bash
+   # Explicit confirmation required
+   python train.py \
+       --dataset pile \
+       --subset pubmed \
+       --confirm-large-dataset \
+       --save-dir checkpoints/pile-experiment
+   ```
+
+3. **Monitor progress:**
+   - Use TensorBoard or Weights & Biases
+   - Set checkpointing frequency
+   - Validate on small subset first
+
+4. **Document experiments:**
+   - Record dataset version and subset
+   - Note preprocessing steps
+   - Save configuration files
+
+## Dataset Attribution
+
+When using datasets in publications or projects:
+
+- **Tiny Shakespeare:** Public domain (Shakespeare) + karpathy processing
+- **WikiText:** CC BY-SA 3.0
+- **The Pile:** MIT License (cite EleutherAI)
+- **C4:** ODC-BY License
+- **OpenWebText:** CC0 (Reddit-sourced)
+
+Always cite original dataset papers and respect licensing terms.

@@ -1,0 +1,170 @@
+---
+title: "Week 04: Attention Mechanics"
+description: "Work through scaled dot-product attention and causal masking by hand and code"
+---
+
+## Module Focus
+
+Work through scaled dot-product attention and causal masking by hand and code.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Explain and derive the core formula">
+    Understand `Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) V` in plain language.
+  </Step>
+  <Step title="Translate formula to code">
+    Convert attention mechanism to readable, testable Python.
+  </Step>
+  <Step title="Solve the coding challenge">
+    Implement causal attention weights in 40-60 minutes.
+  </Step>
+</Steps>
+
+## Core Formula
+
+```
+Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) V
+```
+
+## Mathematical Intuition
+
+Attention lets a token decide how much to read from each earlier token.
+
+<Accordion title="Symbol Glossary">
+  - **Q**: query vectors (what am I looking for?)
+  - **K**: key vectors (what do I contain?)
+  - **V**: value vectors (what information do I store?)
+  - **d_k**: key dimension used for scaling
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Compute similarity scores">
+    Calculate query-key dot products to measure relevance.
+  </Step>
+  <Step title="Scale by sqrt(d_k)">
+    Divide scores by `sqrt(d_k)` to keep gradients stable.
+  </Step>
+  <Step title="Apply softmax and combine">
+    Convert scores to probabilities and combine values with weighted sum.
+  </Step>
+</Steps>
+
+## Why Scale by sqrt(d_k)?
+
+Without scaling, dot products can grow very large when `d_k` is high, pushing softmax into regions with vanishing gradients. Scaling by `sqrt(d_k)` maintains reasonable variance.
+
+## Toy Example Walkthrough
+
+1. Use one query and two visible keys
+2. Convert scores to probabilities
+3. Check that attention weights sum to exactly 1
+
+### Implementation
+
+```python
+from __future__ import annotations
+import math
+
+def run_toy_example() -> dict[str, float]:
+    query_vector = [1.0, 0.0]
+    key_vectors = [[1.0, 0.0], [0.0, 1.0]]
+    scores = [sum(q * k for q, k in zip(query_vector, key_vector)) for key_vector in key_vectors]
+    scaled_scores = [score / math.sqrt(2.0) for score in scores]
+    exponentials = [math.exp(score) for score in scaled_scores]
+    denominator = sum(exponentials)
+    attention_weights = [value / denominator for value in exponentials]
+    return {
+        "primary_metric": attention_weights[0],
+        "secondary_metric": sum(attention_weights),
+    }
+```
+
+## Coding Challenge
+
+<Card title="Causal Attention Weights">
+  **Goal**: Implement causal attention weights for a single query at `current_index`.
+  
+  **Time**: 40-60 minutes
+  
+  **Requirements**:
+  - Only attend to positions 0 through `current_index` (causal masking)
+  - Scale scores by `sqrt(dimension)`
+  - Apply softmax normalization
+  - Keep function names and parameter names explicit
+</Card>
+
+<Accordion title="Reference Solution">
+```python
+from __future__ import annotations
+import math
+
+def compute_causal_attention_weights(
+    query_vector: list[float],
+    key_vectors: list[list[float]],
+    current_index: int,
+) -> list[float]:
+    if current_index < 0 or current_index >= len(key_vectors):
+        raise ValueError("current_index must reference a visible token")
+
+    visible_keys = key_vectors[: current_index + 1]
+    dimension = len(query_vector)
+    scaling_factor = math.sqrt(float(dimension))
+    scores = [
+        sum(query_value * key_value for query_value, key_value in zip(query_vector, key_vector))
+        / scaling_factor
+        for key_vector in visible_keys
+    ]
+    exponentials = [math.exp(score) for score in scores]
+    denominator = sum(exponentials)
+    return [value / denominator for value in exponentials]
+```
+</Accordion>
+
+## Formula to Code Mapping
+
+- Dot products map to a loop over query-key pairs
+- Softmax normalization maps to exponentials over scaled scores
+- Causal masking restricts which keys are visible
+
+## Causal Masking
+
+<Warning>
+In autoregressive language models, each token can only attend to itself and previous tokens, never future tokens. This prevents information leakage during training.
+</Warning>
+
+## Reference Materials
+
+<CardGroup cols={3}>
+  <Card title="Stanford CS25" href="https://web.stanford.edu/class/cs25/">
+    Transformers United Course
+  </Card>
+  <Card title="Attention Is All You Need" href="https://arxiv.org/abs/1706.03762">
+    Original Transformer Paper
+  </Card>
+  <Card title="Jay Alammar Blog" href="https://jalammar.github.io/">
+    Visual Transformer Guides
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Read math_walkthrough.md">
+    Reproduce derivation steps on paper
+  </Step>
+  <Step title="Run toy_example.py">
+    Verify attention weights sum to 1
+  </Step>
+  <Step title="Implement problem.py">
+    Build causal attention from scratch
+  </Step>
+  <Step title="Validate with tests">
+    Unskip exercise tests and run pytest
+  </Step>
+  <Step title="Compare and reflect">
+    Review the reference solution and write a short reflection
+  </Step>
+</Steps>

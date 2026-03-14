@@ -1,0 +1,261 @@
+---
+title: "Week 10: Evaluation and Benchmarking"
+description: "Compute robust metrics and interpret what they reveal about model behavior"
+---
+
+## Module Focus
+
+Compute robust metrics and interpret what they reveal about model behavior. Learn why a single metric can hide failure modes.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Master Evaluation Metrics">
+    Understand and derive F1, precision, recall, and accuracy from confusion matrices
+  </Step>
+  
+  <Step title="Implement Metrics">
+    Translate metric formulas into clean, testable Python code
+  </Step>
+  
+  <Step title="Complete the Challenge">
+    Build a comprehensive binary classification metrics calculator in 30-45 minutes
+  </Step>
+</Steps>
+
+## Core Concept: Classification Metrics
+
+A single metric can hide failure modes. The F1 score combines precision and recall:
+
+```
+F1 = 2 * (precision * recall) / (precision + recall)
+```
+
+### Symbol Glossary
+
+- **TP**: True positives (correctly predicted positive)
+- **FP**: False positives (incorrectly predicted positive)
+- **FN**: False negatives (incorrectly predicted negative)
+- **TN**: True negatives (correctly predicted negative)
+
+### Confusion Matrix Metrics
+
+<Accordion title="Metric Derivations">
+  **Precision**: What fraction of positive predictions were correct?
+  ```
+  precision = TP / (TP + FP)
+  ```
+  
+  **Recall**: What fraction of actual positives were found?
+  ```
+  recall = TP / (TP + FN)
+  ```
+  
+  **F1 Score**: Harmonic mean of precision and recall
+  ```
+  F1 = 2 * (precision * recall) / (precision + recall)
+  ```
+  
+  **Accuracy**: Overall correctness
+  ```
+  accuracy = (TP + TN) / (TP + FP + FN + TN)
+  ```
+</Accordion>
+
+<Note>
+  F1 score is particularly useful for imbalanced datasets where accuracy alone can be misleading. A model that always predicts the majority class will have high accuracy but low F1.
+</Note>
+
+## How It Works
+
+<Steps>
+  <Step title="Build Confusion Matrix">
+    Compute TP, FP, FN, TN counts from predictions and labels
+  </Step>
+  
+  <Step title="Calculate Base Metrics">
+    Derive precision and recall from confusion counts
+  </Step>
+  
+  <Step title="Combine Metrics">
+    Compute F1 score and accuracy from base metrics
+  </Step>
+</Steps>
+
+## Coding Challenge: Binary Classification Metrics
+
+**Duration**: 30-45 minutes
+
+### Problem Statement
+
+Implement precision, recall, F1, and accuracy in one function that takes predictions and labels.
+
+### Starter Code
+
+Location: `week10_evaluation_benchmarks/problem.py`
+
+```python
+from __future__ import annotations
+
+
+def binary_classification_metrics(
+    predictions: list[int],
+    labels: list[int],
+) -> dict[str, float]:
+    # Return precision, recall, f1_score, and accuracy.
+    raise NotImplementedError("Implement binary_classification_metrics")
+```
+
+### Requirements
+
+- Return a dictionary with all four metrics
+- Keep function names and parameter names explicit
+- Write clear logic in small readable steps
+- Handle edge cases appropriately
+
+### Example Implementation
+
+<Accordion title="Reference Solution">
+  ```python
+  def binary_classification_metrics(
+      predictions: list[int],
+      labels: list[int],
+  ) -> dict[str, float]:
+      true_positive = sum(
+          1 for prediction, label in zip(predictions, labels) 
+          if prediction == 1 and label == 1
+      )
+      false_positive = sum(
+          1 for prediction, label in zip(predictions, labels) 
+          if prediction == 1 and label == 0
+      )
+      false_negative = sum(
+          1 for prediction, label in zip(predictions, labels) 
+          if prediction == 0 and label == 1
+      )
+      true_negative = sum(
+          1 for prediction, label in zip(predictions, labels) 
+          if prediction == 0 and label == 0
+      )
+
+      precision = true_positive / (true_positive + false_positive)
+      recall = true_positive / (true_positive + false_negative)
+      f1_score = 2.0 * precision * recall / (precision + recall)
+      accuracy = (true_positive + true_negative) / len(predictions)
+      
+      return {
+          "precision": precision,
+          "recall": recall,
+          "f1_score": f1_score,
+          "accuracy": accuracy,
+      }
+  ```
+  
+  **Key insights:**
+  - Use generator expressions with `zip` for clean pair-wise comparison
+  - Compute all confusion matrix values first
+  - Calculate derived metrics from base counts
+  - Return structured dictionary for easy access
+</Accordion>
+
+### Toy Example
+
+```python
+predictions = [1, 0, 1, 1, 0]
+labels      = [1, 0, 0, 1, 0]
+
+# TP = 2 (indices 0, 3)
+# FP = 1 (index 2)
+# FN = 0
+# TN = 2 (indices 1, 4)
+
+# Precision = 2/3 ≈ 0.667
+# Recall = 2/2 = 1.0
+# F1 = 2 * (0.667 * 1.0) / (0.667 + 1.0) = 0.8
+# Accuracy = 4/5 = 0.8
+```
+
+<Warning>
+  **Edge Case**: When TP + FP = 0 or TP + FN = 0, precision or recall becomes undefined. Consider how to handle division by zero in production code.
+</Warning>
+
+## Validation
+
+<CodeGroup>
+```bash Reference Tests
+pytest tests/test_problem_solution.py
+```
+
+```bash Exercise Tests
+# Unskip tests first, then run:
+pytest tests/test_problem_exercise.py
+```
+</CodeGroup>
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="Stanford CS224N" href="https://web.stanford.edu/class/cs224n/">
+    Natural language processing course covering evaluation metrics
+  </Card>
+  
+  <Card title="Language Models are Few-Shot Learners" href="https://arxiv.org/abs/2005.14165">
+    GPT-3 paper demonstrating comprehensive benchmark evaluation
+  </Card>
+  
+  <Card title="Google DeepMind Research" href="https://deepmind.google/research/">
+    Research on evaluation methodologies and benchmarks
+  </Card>
+  
+  <Card title="Hugging Face LLM Course" href="https://huggingface.co/learn/llm-course/chapter1/1">
+    Practical guide to evaluating language models
+  </Card>
+</CardGroup>
+
+## Suggested Weekly Workflow
+
+<Steps>
+  <Step title="Study the Math">
+    Read `math_walkthrough.md` and derive each metric from scratch
+  </Step>
+  
+  <Step title="Run Toy Example">
+    Execute `toy_example.py` and verify you can compute metrics by hand
+  </Step>
+  
+  <Step title="Implement Solution">
+    Complete `problem.py` with your metric calculator
+  </Step>
+  
+  <Step title="Test Your Code">
+    Unskip exercise tests and ensure all cases pass
+  </Step>
+  
+  <Step title="Compare and Reflect">
+    Review `solution.py` and write notes on when to use each metric
+  </Step>
+</Steps>
+
+## When to Use Each Metric
+
+<Accordion title="Metric Selection Guide">
+  **Accuracy**: Use when classes are balanced and all errors are equally costly
+  
+  **Precision**: Use when false positives are more costly (e.g., spam detection - don't want to mark real emails as spam)
+  
+  **Recall**: Use when false negatives are more costly (e.g., disease detection - don't want to miss sick patients)
+  
+  **F1 Score**: Use when you need a balance between precision and recall, or when classes are imbalanced
+</Accordion>
+
+## Prerequisites
+
+Before starting this week, you should understand:
+- Week 09: Distributed Training and Inference
+- Basic probability and statistics
+- Binary classification concepts
+
+## Next Steps
+
+After completing this week, proceed to:
+- **Week 11**: Alignment and Safety Objectives - Learn how to optimize models safely

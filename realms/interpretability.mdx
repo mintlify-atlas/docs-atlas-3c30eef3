@@ -1,0 +1,268 @@
+---
+title: Interpretability
+description: Expose internal model mechanisms and attribute behavior to components
+---
+
+# Realm: Interpretability
+
+Expose internal model mechanisms and attribute behavior to interpretable components. Learn mechanistic interpretability techniques to understand how neural networks actually work.
+
+## Core Goal
+
+Understand the internal representations and computational mechanisms of neural networks. You'll learn feature visualization, activation patching, circuit analysis, and how to connect interpretations to measurable behavior.
+
+## Prerequisites
+
+Before starting this realm, complete:
+
+- **Weeks 1-8**: Foundational material through transformer architecture
+- **Week 12**: Interpretability and Mechanistic Analysis (provides direct context)
+- **Week 4**: Attention Mechanics (for attention analysis)
+- **Week 10**: Evaluation and Benchmarks
+
+Recommended: Some linear algebra and understanding of gradient flow.
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="Transformer Circuits" href="https://transformer-circuits.pub/">
+    Mechanistic interpretability research
+  </Card>
+  
+  <Card title="Anthropic Research" href="https://www.anthropic.com/research">
+    Interpretability and feature discovery
+  </Card>
+  
+  <Card title="Jay Alammar Blog" href="https://jalammar.github.io/">
+    Visual explanations of transformers
+  </Card>
+  
+  <Card title="Distill.pub" href="https://distill.pub/">
+    Interactive interpretability articles
+  </Card>
+</CardGroup>
+
+## Project Ladder
+
+Progress through three tiers of increasing complexity:
+
+### Short Project (1-2 days)
+
+**Goal**: Rank feature or neuron contributions on toy models
+
+<Steps>
+  <Step title="Train Tiny Model">
+    Train 2-layer MLP or small transformer on simple task (e.g., sentiment classification).
+  </Step>
+  
+  <Step title="Compute Activation Statistics">
+    Record activations on test set. Compute mean, variance, sparsity per neuron.
+  </Step>
+  
+  <Step title="Implement Attribution Method">
+    Use gradient-based (saliency) or activation-based (contribution = activation * weight) attribution.
+  </Step>
+  
+  <Step title="Visualize Top Features">
+    Show examples that maximally activate top neurons. Interpret patterns.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Trained toy model
+- Activation collection pipeline
+- Attribution implementation
+- Feature visualization notebook
+
+### Medium Project (3-7 days)
+
+**Goal**: Run activation patching style experiments on small networks
+
+<Steps>
+  <Step title="Set Up Patching Framework">
+    Implement hooks to intervene on activations during forward pass.
+  </Step>
+  
+  <Step title="Design Patching Experiments">
+    Test: What happens if we replace layer L's output with cached activations from different input?
+  </Step>
+  
+  <Step title="Run Systematic Sweep">
+    Patch each layer independently. Measure effect on output logits and loss.
+  </Step>
+  
+  <Step title="Identify Critical Layers">
+    Find which layers/heads are most important for specific behaviors.
+  </Step>
+  
+  <Step title="Document Findings">
+    Visualize patching effects. Interpret results in terms of information flow.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Activation patching framework
+- Systematic patching experiments
+- Layer importance analysis
+- Information flow visualization
+
+### Deep Project (1-2 weeks)
+
+**Goal**: Connect mechanistic findings to measurable behavior shifts
+
+<Steps>
+  <Step title="Identify Target Behavior">
+    Choose specific model behavior to explain (e.g., "why does it prefer answer A over B?").
+  </Step>
+  
+  <Step title="Hypothesis Generation">
+    Form hypotheses about which components are responsible. Design tests.
+  </Step>
+  
+  <Step title="Run Intervention Experiments">
+    Use ablation, patching, or weight modifications. Measure behavior change.
+  </Step>
+  
+  <Step title="Validate Causally">
+    Show interventions cause predictable behavior shifts. Test on multiple examples.
+  </Step>
+  
+  <Step title="Build Mechanistic Explanation">
+    Document full causal chain from input to output through specific circuits.
+  </Step>
+  
+  <Step title="Test Generalization">
+    Verify explanation holds on related but different examples.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Complete mechanistic explanation
+- Causal intervention results
+- Generalization tests
+- Technical write-up with diagrams
+
+## Acceptance Criteria
+
+Your work meets professional standards if:
+
+<AccordionGroup>
+  <Accordion title="Claims Tied to Reproducible Experiments">
+    - All results include random seed and hyperparameters
+    - Code provided for all interventions
+    - Effect sizes reported with confidence intervals
+    - Multiple examples shown per claim
+    - Negative results documented
+  </Accordion>
+  
+  <Accordion title="Attribution Method Limits Explicitly Stated">
+    - Known failure modes described
+    - Comparison to alternative methods
+    - Assumptions clearly listed
+    - When method is/isn't appropriate
+    - Future improvements suggested
+  </Accordion>
+  
+  <Accordion title="Clear Pathway from Interpretation to Intervention">
+    - Mechanistic understanding → testable prediction
+    - Prediction → intervention design
+    - Intervention → measured outcome
+    - Outcome → refined understanding
+    - Full cycle demonstrated
+  </Accordion>
+</AccordionGroup>
+
+## Key Concepts to Master
+
+- **Attribution Methods**: Gradients, integrated gradients, attention weights, activation patching
+- **Feature Visualization**: Activation maximization, dataset examples, synthetic inputs
+- **Circuit Analysis**: Identifying computational subgraphs, tracking information flow
+- **Causal Interventions**: Ablation, patching, steering vectors
+- **Validation**: How to know if interpretations are correct, not just plausible
+
+## Common Pitfalls
+
+<Warning>
+**Avoid these mistakes:**
+
+- Confusing correlation with causation
+- Cherry-picking examples that fit narrative
+- Over-interpreting attention weights
+- Not testing alternative explanations
+- Claiming understanding without intervention tests
+</Warning>
+
+## Implementation Tips
+
+<Accordion title="Activation Patching">
+Replace activations at layer L with cached values from different input. If output changes, layer L matters for that behavior. Patch each layer and head independently to build causal graph.
+</Accordion>
+
+<Accordion title="Feature Visualization">
+Start with dataset examples (find inputs that activate neuron highly). Then try optimization-based approaches (gradient ascent on input to maximize activation). Compare both.
+</Accordion>
+
+<Accordion title="Attention Analysis">
+Attention weights show where model looks, not what it learns. Use attention + value vectors for better insight. Validate attention findings with ablation.
+</Accordion>
+
+## Research Techniques
+
+<Tabs>
+  <Tab title="Logit Lens">
+    Project intermediate layer representations to vocabulary space. Shows what model "thinks" at each layer. Useful for understanding layer-wise computation.
+  </Tab>
+  
+  <Tab title="Activation Patching">
+    Systematically replace activations to find causal components. Gold standard for mechanistic interpretability. Can be expensive but highly informative.
+  </Tab>
+  
+  <Tab title="Probing Classifiers">
+    Train linear probes on intermediate representations. Tests if information is linearly accessible. Doesn't prove model uses that information.
+  </Tab>
+  
+  <Tab title="Circuit Discovery">
+    Identify minimal subgraphs that implement behaviors. Start with patching, then analyze attention patterns and MLP neurons. Build end-to-end story.
+  </Tab>
+</Tabs>
+
+## Integration with Other Realms
+
+Interpretability knowledge enables:
+
+- **Alignment & Safety**: Understanding how safety training works
+- **LLM Systems**: Debugging unexpected model behaviors
+- **Vision Transformers**: Visualizing what vision models learn
+- **Multimodal Alignment**: Understanding cross-modal attention
+
+## Example Research Questions
+
+<AccordionGroup>
+  <Accordion title="Induction Heads in Transformers">
+    How do transformers learn to copy tokens? Find attention heads that look back to previous occurrences. Verify with patching.
+  </Accordion>
+  
+  <Accordion title="Factual Recall Mechanisms">
+    Where are facts stored? Test if specific MLP layers encode factual associations. Intervene to change outputs.
+  </Accordion>
+  
+  <Accordion title="Arithmetic Circuits">
+    How do transformers add numbers? Identify attention and MLP circuits. Show they implement algorithmic addition.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Start Short Project" href="/quickstart">
+    Train toy model and visualize neurons
+  </Card>
+  
+  <Card title="Review Week 12" href="/weeks/week12-interpretability-mechanistic">
+    Refresh interpretability concepts
+  </Card>
+  
+  <Card title="Explore Transformer Circuits" href="https://transformer-circuits.pub/">
+    Study mechanistic research
+  </Card>
+</CardGroup>

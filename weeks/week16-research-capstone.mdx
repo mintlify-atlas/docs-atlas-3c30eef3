@@ -1,0 +1,420 @@
+---
+title: "Week 16: Research Capstone and Experiment Design"
+description: "Summarize experiment variability with bootstrap confidence intervals"
+---
+
+## Module Focus
+
+Summarize experiment variability with bootstrap confidence intervals to communicate the reliability of your research findings.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Understand Uncertainty Quantification">
+    Learn why point estimates hide variance and how confidence intervals expose uncertainty
+  </Step>
+  
+  <Step title="Master Bootstrap Method">
+    Derive confidence intervals: `CI = [percentile(alpha/2), percentile(1 - alpha/2)]`
+  </Step>
+  
+  <Step title="Implement Statistical Testing">
+    Build a bootstrap confidence interval calculator in 45-60 minutes
+  </Step>
+</Steps>
+
+## Core Concept: Bootstrap Confidence Intervals
+
+Point estimates hide variance; confidence intervals expose run-to-run uncertainty:
+
+```
+CI = [percentile(alpha/2), percentile(1 - alpha/2)]
+```
+
+For 95% confidence intervals, α = 0.05, so we use the 2.5th and 97.5th percentiles.
+
+### Symbol Glossary
+
+- **scores**: Repeated run metrics (e.g., test accuracies from multiple training runs)
+- **alpha** (α): Significance level (typically 0.05 for 95% CI)
+- **CI**: Confidence interval bounds [lower, upper]
+- **bootstrap sample**: Resampled scores with replacement
+
+### Why Bootstrap?
+
+<Note>
+  Traditional confidence intervals assume normally distributed data and require closed-form variance formulas.
+  
+  **Bootstrap** is non-parametric:
+  - No distribution assumptions
+  - Works for any statistic (mean, median, max, etc.)
+  - Simple to implement
+  - Reliable for small sample sizes
+</Note>
+
+## The Bootstrap Method
+
+<Accordion title="How Bootstrap Resampling Works">
+  Given N experimental results (e.g., 5 training runs):
+  
+  **Step 1**: Resample with replacement
+  ```
+  Original: [0.62, 0.65, 0.64, 0.66, 0.63]
+  Sample 1: [0.65, 0.62, 0.65, 0.63, 0.64]  # 0.65 appears twice
+  Sample 2: [0.64, 0.66, 0.64, 0.62, 0.64]  # 0.64 appears three times
+  ...
+  ```
+  
+  **Step 2**: Compute statistic for each resample
+  ```
+  mean(sample_1) = 0.638
+  mean(sample_2) = 0.640
+  ...
+  mean(sample_10000) = 0.641
+  ```
+  
+  **Step 3**: Take percentiles of bootstrap statistics
+  ```
+  sorted_means = [0.620, 0.623, ..., 0.657, 0.660]
+  lower = sorted_means[250]   # 2.5th percentile
+  upper = sorted_means[9750]  # 97.5th percentile
+  CI = [0.625, 0.655]
+  ```
+  
+  This interval captures the uncertainty in the mean estimate.
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Resample with Replacement">
+    Create many bootstrap samples by randomly drawing from original scores (allowing duplicates)
+  </Step>
+  
+  <Step title="Compute Bootstrap Statistics">
+    Calculate the mean (or other statistic) for each bootstrap sample
+  </Step>
+  
+  <Step title="Extract Percentile Bounds">
+    Sort bootstrap statistics and take the α/2 and 1-α/2 percentiles as confidence interval bounds
+  </Step>
+</Steps>
+
+## Coding Challenge: Bootstrap Confidence Interval
+
+**Duration**: 45-60 minutes
+
+### Problem Statement
+
+Implement deterministic bootstrap confidence intervals for experiment scores.
+
+### Starter Code
+
+Location: `week16_research_capstone/problem.py`
+
+```python
+from __future__ import annotations
+
+import random
+
+
+def bootstrap_confidence_interval(
+    scores: list[float],
+    sample_count: int,
+    random_seed: int,
+) -> tuple[float, float]:
+    # Return (lower_bound, upper_bound) 95% confidence interval.
+    raise NotImplementedError("Implement bootstrap_confidence_interval")
+```
+
+### Requirements
+
+- Use the provided `random_seed` for reproducibility
+- Generate `sample_count` bootstrap samples
+- Compute 95% confidence interval (2.5th and 97.5th percentiles)
+- Return (lower_bound, upper_bound) tuple
+
+### Example Implementation
+
+<Accordion title="Reference Solution">
+  ```python
+  import random
+
+  def bootstrap_confidence_interval(
+      scores: list[float],
+      sample_count: int,
+      random_seed: int,
+  ) -> tuple[float, float]:
+      random_generator = random.Random(random_seed)
+      bootstrap_means: list[float] = []
+      
+      for _ in range(sample_count):
+          sample = [random_generator.choice(scores) for _ in range(len(scores))]
+          bootstrap_means.append(sum(sample) / len(sample))
+      
+      bootstrap_means.sort()
+      lower_index = int(0.025 * sample_count)
+      upper_index = int(0.975 * sample_count)
+      
+      return bootstrap_means[lower_index], bootstrap_means[upper_index]
+  ```
+  
+  **Key insights:**
+  - Use seeded random generator for reproducibility
+  - Each bootstrap sample has same size as original
+  - Sample **with replacement** (same score can appear multiple times)
+  - Percentile indices are 2.5% and 97.5% of sample_count
+</Accordion>
+
+### Toy Example
+
+```python
+scores = [0.62, 0.65, 0.64, 0.66, 0.63]
+sample_count = 10000
+random_seed = 42
+
+ci = bootstrap_confidence_interval(scores, sample_count, random_seed)
+
+# Expected output (approximate):
+# (0.625, 0.652)
+
+# Interpretation:
+# We're 95% confident the true mean accuracy is between 62.5% and 65.2%
+# Point estimate: 64.0%
+# Interval width: 2.7 percentage points
+```
+
+**What this tells us**:
+- The mean is well-estimated (narrow interval)
+- Low run-to-run variance
+- Results are reliable
+
+<Warning>
+  **Common Pitfall**: Don't use the original data's min/max as CI bounds! Bootstrap resampling can produce means outside the original range due to sampling variability.
+</Warning>
+
+## Validation
+
+<CodeGroup>
+```bash Reference Tests
+pytest tests/test_problem_solution.py
+```
+
+```bash Exercise Tests
+# Unskip tests first, then run:
+pytest tests/test_problem_exercise.py
+```
+</CodeGroup>
+
+## Reference Materials
+
+<CardGroup cols={1}>
+  <Card title="OpenAI Research" href="https://openai.com/research/">
+    Examples of rigorous experiment design and statistical reporting in ML research
+  </Card>
+</CardGroup>
+
+## Interpreting Confidence Intervals
+
+<Accordion title="What 95% Confidence Means">
+  **Correct interpretation**:
+  If we repeated the entire experiment many times (train N models, compute CI), 95% of the intervals would contain the true population mean.
+  
+  **Common misconception**:
+  "There's a 95% probability the true mean is in this interval" ❌
+  
+  The interval either contains the true mean or it doesn't—confidence refers to the procedure, not a specific interval.
+  
+  **Practical takeaway**:
+  Narrower intervals → more reliable estimate
+  Wider intervals → more uncertainty, need more runs
+</Accordion>
+
+## When to Use Bootstrap
+
+<Note>
+  **Good use cases**:
+  - Small sample sizes (< 30 runs)
+  - Non-normal distributions
+  - Complex statistics (median, 95th percentile, etc.)
+  - Comparing two models
+  
+  **Limitations**:
+  - Assumes samples are independent (watch out for correlated runs!)
+  - Requires enough data to resample meaningfully (at least 5-10 runs)
+  - Computationally expensive for very large datasets
+</Note>
+
+## Suggested Weekly Workflow
+
+<Steps>
+  <Step title="Study the Math">
+    Read `math_walkthrough.md` and understand the resampling process
+  </Step>
+  
+  <Step title="Run Toy Example">
+    Execute `toy_example.py` and observe how interval width relates to variance
+  </Step>
+  
+  <Step title="Implement Solution">
+    Complete `problem.py` with proper percentile calculation
+  </Step>
+  
+  <Step title="Test Your Code">
+    Unskip exercise tests and validate with different sample counts
+  </Step>
+  
+  <Step title="Compare and Reflect">
+    Review `solution.py` and consider: how many bootstrap samples are enough?
+  </Step>
+</Steps>
+
+## Experimental Best Practices
+
+<Accordion title="Reporting ML Results Rigorously">
+  **1. Multiple random seeds**
+  - Run at least 3-5 trials with different seeds
+  - Report mean ± standard deviation or confidence interval
+  - Never report single-run results
+  
+  **2. Statistical significance**
+  - Use bootstrap or t-tests to compare methods
+  - Don't claim improvement without significance testing
+  - Report p-values when comparing methods
+  
+  **3. Transparency**
+  - Report hyperparameter search process
+  - Mention failed experiments (negative results are valuable!)
+  - Include computational cost and runtime
+  
+  **4. Reproducibility**
+  - Fix random seeds for reproducibility
+  - Share code and hyperparameters
+  - Document environment (library versions, hardware)
+</Accordion>
+
+## Comparing Two Models
+
+<Accordion title="Bootstrap for Model Comparison">
+  To test if Model A is better than Model B:
+  
+  **Step 1**: Run both models N times
+  ```
+  scores_A = [0.81, 0.83, 0.82, 0.84, 0.82]
+  scores_B = [0.78, 0.80, 0.79, 0.81, 0.79]
+  ```
+  
+  **Step 2**: Compute difference in means
+  ```
+  diff = mean(scores_A) - mean(scores_B) = 0.824 - 0.794 = 0.03
+  ```
+  
+  **Step 3**: Bootstrap the difference
+  - Resample both score lists
+  - Compute difference for each bootstrap sample
+  - Get CI for the difference
+  
+  **Step 4**: Check if 0 is in the CI
+  - CI for diff = [0.01, 0.05] → Significant! (0 not in interval)
+  - CI for diff = [-0.01, 0.07] → Not significant (0 in interval)
+</Accordion>
+
+## Real-World Applications
+
+- **Ablation studies**: Quantify impact of each component
+- **Hyperparameter tuning**: Report optimal config with uncertainty
+- **Model comparison**: Determine if improvements are real or noise
+- **Deployment decisions**: Assess risk before production
+- **Research papers**: Credibly claim state-of-the-art results
+
+## Advanced Topics
+
+<Note>
+  **Parametric bootstrap**: When you know the data distribution
+  
+  **Stratified bootstrap**: Preserve class balance when resampling
+  
+  **Block bootstrap**: For time-series data with temporal correlation
+  
+  **Bias-corrected and accelerated (BCa)**: Adjusts for skewness
+  
+  **Permutation tests**: Alternative for hypothesis testing
+</Note>
+
+## Research Capstone Integration
+
+<Accordion title="Bringing It All Together">
+  This final week synthesizes 16 weeks of learning:
+  
+  **Weeks 1-8 (Foundations)**:
+  - Math, optimization, architecture
+  - Built the models you're now evaluating
+  
+  **Weeks 9-12 (Advanced Training)**:
+  - Distributed training, evaluation, alignment, interpretability
+  - Enabled large-scale rigorous experiments
+  
+  **Weeks 13-15 (Frontiers)**:
+  - Vision, RL, multimodal
+  - Cutting-edge architectures to research
+  
+  **Week 16 (Capstone)**:
+  - Statistical rigor
+  - Transform experiments into publishable research
+</Accordion>
+
+## Checklist for Research Projects
+
+<Steps>
+  <Step title="Define Research Question">
+    Clear hypothesis and measurable objectives
+  </Step>
+  
+  <Step title="Design Experiments">
+    Controls, baselines, ablations, multiple seeds
+  </Step>
+  
+  <Step title="Implement and Run">
+    Use weeks 1-15 knowledge to build systems
+  </Step>
+  
+  <Step title="Quantify Uncertainty">
+    Bootstrap confidence intervals (this week!)
+  </Step>
+  
+  <Step title="Report Rigorously">
+    Transparent, reproducible, statistically sound
+  </Step>
+</Steps>
+
+## Congratulations!
+
+You've completed all 16 weeks of the AI Researcher Zero-to-SOTA curriculum. You now have:
+
+✅ Deep understanding of transformer architectures  
+✅ Hands-on experience with core algorithms  
+✅ Knowledge of advanced topics (distributed training, alignment, multimodal)  
+✅ Statistical rigor for research publication  
+
+<Note>
+  **Next steps**:
+  - Apply these skills to your own research projects
+  - Contribute to open-source ML projects
+  - Read recent papers and implement novel ideas
+  - Participate in research communities
+  - Consider graduate studies or research positions
+</Note>
+
+## Prerequisites
+
+Before starting this week, understand:
+- Week 15: Multimodal Representation Learning
+- Basic statistics (mean, variance, percentiles)
+- Scientific method and experimental design
+
+## Further Reading
+
+- **The Bootstrap (Efron & Tibshirani)**: Classic reference on bootstrap methods
+- **Deep Learning Tuning Playbook (Google)**: Rigorous experiment design guide
+- **ML Code Completeness Checklist**: Reproducibility best practices
+- **Papers with Code**: Examples of well-documented research

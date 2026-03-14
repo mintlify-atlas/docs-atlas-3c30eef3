@@ -1,0 +1,614 @@
+---
+title: "Infrastructure"
+description: "Development setup, CI/CD, repository structure, and quality checks"
+---
+
+## Development Setup
+
+The AI Researcher curriculum uses modern Python tooling for fast, reproducible development.
+
+### Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="Python 3.11+">
+    Required for modern type hints and performance
+  </Card>
+  <Card title="uv Package Manager">
+    Fast dependency resolution and virtual environment management
+  </Card>
+  <Card title="Git">
+    Version control and collaboration
+  </Card>
+  <Card title="Make">
+    Task automation (optional but recommended)
+  </Card>
+</CardGroup>
+
+### Initial Setup
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd ai-researcher-repo
+
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install development dependencies
+make install-dev
+# Or manually:
+# uv sync --extra dev
+
+# Verify installation
+make run-checks
+```
+
+### Optional Framework Installation
+
+The curriculum supports PyTorch, JAX, and TensorFlow. Install based on your preference:
+
+<Accordion title="PyTorch (Recommended)">
+  ```bash
+  # Install PyTorch extra
+  uv sync --extra pytorch
+  
+  # Or with CUDA support (Linux)
+  pip install torch --index-url https://download.pytorch.org/whl/cu118
+  ```
+  
+  **Use case:** Most curriculum examples use PyTorch
+</Accordion>
+
+<Accordion title="JAX">
+  ```bash
+  # Install JAX extra
+  uv sync --extra jax
+  
+  # Or with CUDA support
+  pip install jax[cuda12_pip] -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+  ```
+  
+  **Use case:** Distributed training (Week 9), functional programming style
+</Accordion>
+
+<Accordion title="TensorFlow">
+  ```bash
+  # Install TensorFlow extra
+  uv sync --extra tensorflow
+  ```
+  
+  **Use case:** Alternative framework for comparisons
+</Accordion>
+
+## Local Development Commands
+
+Common tasks via Makefile:
+
+### Quality Checks
+
+```bash
+# Run all fast checks (lint + type + test)
+make run-checks
+
+# Individual checks
+make lint          # Ruff linting
+make typecheck     # Mypy type checking
+make test          # Fast unit tests
+```
+
+**Expected output:**
+```
+✓ Ruff linting passed
+✓ Mypy type checking passed
+✓ Tests passed (45 passed in 2.3s)
+```
+
+### Testing
+
+```bash
+# Fast tests only (unit, pedagogy, safety)
+make test
+
+# Include integration tests
+make test-integration
+
+# Specific test markers
+pytest -m unit
+pytest -m integration
+pytest -m exercise
+
+# With coverage
+pytest --cov=src --cov-report=html
+```
+
+### Code Quality
+
+```bash
+# Auto-fix linting issues
+ruff check --fix src/ tests/
+
+# Format code
+ruff format src/ tests/
+
+# Type check specific module
+mypy src/attention.py
+```
+
+### Reference Validation
+
+```bash
+# Verify week-to-reference alignment
+uv run --extra dev python tools/validate_reference_alignment.py --strict
+
+# View generated report
+cat references/reference_alignment_report.md
+```
+
+### CLI Usage
+
+```bash
+# Run checks via project CLI
+python -m ai_researcher_repo.cli run-checks
+
+# Other CLI commands (if available)
+ai-researcher --help
+```
+
+## Repository Structure
+
+```
+ai-researcher-repo/
+├── src/
+│   └── ai_researcher_repo/
+│       ├── __init__.py
+│       ├── cli.py              # Command-line interface
+│       ├── attention.py        # Attention mechanisms
+│       ├── embeddings.py       # Token and positional embeddings
+│       ├── transformer.py      # Transformer architecture
+│       ├── training.py         # Training loops and objectives
+│       └── data.py             # Data loading and processing
+├── tests/
+│   ├── test_attention.py       # Unit tests for attention
+│   ├── test_embeddings.py      # Unit tests for embeddings
+│   ├── test_training.py        # Integration tests
+│   └── exercises/              # Exercise validation tests
+│       ├── test_week03.py
+│       ├── test_week04.py
+│       └── ...
+├── exercises/
+│   ├── week03/                 # Week 3 exercises
+│   │   ├── README.md
+│   │   └── solution.py         # Learner implementation area
+│   ├── week04/
+│   └── ...
+├── references/
+│   ├── sources.yaml            # Curated reference sources
+│   ├── datasets.md             # Dataset policy
+│   └── README.md               # Reference canon overview
+├── tools/
+│   └── validate_reference_alignment.py  # Alignment audit tool
+├── docs/
+│   └── ...                     # Documentation (if using Mintlify)
+├── pyproject.toml              # Project configuration
+├── Makefile                    # Task automation
+├── README.md                   # Project overview
+├── ENGINEERING_CHARTER.md      # Coding standards
+├── LICENSE                     # MIT License
+└── .github/
+    └── workflows/
+        └── fast-checks.yml     # CI configuration
+```
+
+### Key Directories
+
+<Accordion title="src/ai_researcher_repo/">
+  **Purpose:** Core implementation code
+  
+  **Organization:**
+  - One module per major concept (attention, embeddings, etc.)
+  - Pure functions and classes
+  - Minimal side effects (see Engineering Charter)
+  
+  **Quality Standards:**
+  - 100% type hints required
+  - Comprehensive docstrings
+  - Unit test coverage >95%
+</Accordion>
+
+<Accordion title="tests/">
+  **Purpose:** Test suite
+  
+  **Organization:**
+  - `test_*.py` mirrors `src/` structure
+  - `exercises/` contains learner validation tests
+  - Fixtures in `conftest.py`
+  
+  **Markers:**
+  - `@pytest.mark.unit` - fast, isolated
+  - `@pytest.mark.integration` - tiny end-to-end
+  - `@pytest.mark.pedagogy` - docs verification
+  - `@pytest.mark.safety` - resource limits
+  - `@pytest.mark.exercise` - learner solutions
+</Accordion>
+
+<Accordion title="exercises/">
+  **Purpose:** Week-by-week learner implementations
+  
+  **Structure:**
+  ```
+  exercises/week04/
+  ├── README.md           # Exercise description and learning goals
+  ├── solution.py         # Learner fills in implementations
+  └── test_solution.py    # Auto-grading tests (symlink to tests/exercises/)
+  ```
+  
+  **Workflow:**
+  1. Read `README.md`
+  2. Implement in `solution.py`
+  3. Run `pytest -m exercise` to validate
+</Accordion>
+
+<Accordion title="references/">
+  **Purpose:** Curated learning resources
+  
+  **Files:**
+  - `sources.yaml` - structured reference catalog
+  - `datasets.md` - dataset policy and options
+  - `reference_alignment_report.md` - generated alignment audit
+  
+  **Verification:**
+  ```bash
+  uv run --extra dev python tools/validate_reference_alignment.py --strict
+  ```
+</Accordion>
+
+<Accordion title="tools/">
+  **Purpose:** Developer utilities
+  
+  **Scripts:**
+  - `validate_reference_alignment.py` - audit week-to-source linkage
+  - (Future: dataset download helpers, model benchmarking, etc.)
+</Accordion>
+
+## Continuous Integration
+
+GitHub Actions workflow runs on every push and pull request.
+
+### Fast Checks Workflow
+
+**File:** `.github/workflows/fast-checks.yml`
+
+**Triggers:** `push`, `pull_request`
+
+**Steps:**
+1. **Ruff linting** - Check code style for `src/` and `tests/`
+2. **Mypy type checking** - Verify type annotations in `src/`
+3. **Fast pytest** - Run unit, pedagogy, and safety tests
+
+**Duration:** ~1-2 minutes
+
+**Configuration:**
+```yaml
+name: Fast Checks
+
+on: [push, pull_request]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv sync --extra dev
+      
+      - name: Lint with ruff
+        run: ruff check src/ tests/
+      
+      - name: Type check with mypy
+        run: mypy src/
+      
+      - name: Run fast tests
+        run: pytest -m "unit or pedagogy or safety"
+```
+
+### Integration Tests (Manual)
+
+Integration tests are **not** part of default CI due to longer runtime. Run manually:
+
+```bash
+# Locally
+make test-integration
+
+# Or in CI via workflow_dispatch or milestone branches
+```
+
+**Rationale:**
+- Integration tests take 1-3 minutes
+- Fast feedback loop prioritized for development
+- Integration tests run before merges to main
+
+## Safety Guardrails
+
+Protections against accidental resource usage:
+
+<CardGroup cols={2}>
+  <Card title="Toy Datasets by Default">
+    Default config uses synthetic or tiny Shakespeare (< 1MB)
+  </Card>
+  <Card title="No Large Downloads in Tests">
+    Tests never download >1MB. Enforced by safety marker tests.
+  </Card>
+  <Card title="No Full Training in CI">
+    CI runs toy experiments only (less than 100 steps, less than 1M params)
+  </Card>
+  <Card title="Explicit Opt-In for Scale">
+    Large datasets require `--confirm-large-dataset` flag
+  </Card>
+</CardGroup>
+
+### Configuration Validation
+
+```python
+# Example from src/config.py
+from dataclasses import dataclass
+
+@dataclass
+class TrainingConfig:
+    dataset_name: str = "synthetic"  # Safe default
+    max_samples: int = 1000          # Limit for safety
+    
+    def validate(self) -> None:
+        """Ensure configuration is safe."""
+        large_datasets = ["pile", "c4", "openwebtext"]
+        
+        if self.dataset_name in large_datasets:
+            raise ValueError(
+                f"Large dataset '{self.dataset_name}' requires "
+                "explicit confirmation. Use --confirm-large-dataset flag."
+            )
+        
+        if self.max_samples > 100_000:
+            raise ValueError(
+                f"max_samples={self.max_samples} exceeds safety limit. "
+                "Use explicit override if intended."
+            )
+```
+
+## Quality Enforcement
+
+Multiple layers ensure code quality:
+
+### 1. Ruff Linting
+
+**Configuration:** `pyproject.toml`
+
+```toml
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+```
+
+**Checks:**
+- Code style (PEP 8)
+- Import sorting
+- Unused variables
+- Common anti-patterns
+
+**Usage:**
+```bash
+# Check
+ruff check src/ tests/
+
+# Auto-fix
+ruff check --fix src/ tests/
+
+# Format
+ruff format src/ tests/
+```
+
+### 2. Mypy Type Checking
+
+**Configuration:** `pyproject.toml`
+
+```toml
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+```
+
+**Enforces:**
+- All functions have type hints
+- Type correctness across calls
+- No implicit `Any` types
+
+**Usage:**
+```bash
+# Check all of src/
+mypy src/
+
+# Specific module
+mypy src/attention.py
+```
+
+### 3. Pytest Testing
+
+**Configuration:** `pyproject.toml`
+
+```toml
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q --import-mode=importlib"
+testpaths = ["tests"]
+markers = [
+  "unit: fast unit tests",
+  "integration: tiny deterministic integration tests",
+  "pedagogy: documentation completeness tests",
+  "safety: runtime safety checks",
+  "exercise: learner-facing challenge tests that are skipped by default",
+]
+```
+
+**Coverage requirement:** >90% for core logic
+
+### 4. Code Review
+
+Human verification of:
+- Engineering Charter compliance
+- Test coverage adequacy
+- Documentation clarity
+- Pedagogical value
+
+## Development Workflow
+
+### Typical Development Cycle
+
+1. **Create feature branch:**
+   ```bash
+   git checkout -b feature/new-attention-variant
+   ```
+
+2. **Write tests first (TDD):**
+   ```python
+   # tests/test_attention.py
+   @pytest.mark.unit
+   def test_new_attention_variant():
+       # Test that will initially fail
+       ...
+   ```
+
+3. **Run tests to confirm failure:**
+   ```bash
+   pytest tests/test_attention.py::test_new_attention_variant
+   ```
+
+4. **Implement feature:**
+   ```python
+   # src/attention.py
+   def new_attention_variant(...):
+       # Implementation
+       ...
+   ```
+
+5. **Run tests until passing:**
+   ```bash
+   pytest tests/test_attention.py::test_new_attention_variant
+   ```
+
+6. **Run full quality checks:**
+   ```bash
+   make run-checks
+   ```
+
+7. **Commit and push:**
+   ```bash
+   git add src/attention.py tests/test_attention.py
+   git commit -m "Add new attention variant with masking support"
+   git push origin feature/new-attention-variant
+   ```
+
+8. **Create pull request** - CI runs automatically
+
+9. **Address review feedback** - iterate until approved
+
+10. **Merge to main** - squash or merge commit
+
+## Performance Considerations
+
+### Fast Iteration
+
+<Note>
+**Development speed optimizations:**
+- `uv` for fast dependency resolution (10-100x faster than pip)
+- Fast tests run in less than 30s (immediate feedback)
+- Type checking catches errors before runtime
+- Auto-formatting eliminates style debates
+</Note>
+
+### Compute Resources
+
+**Default (no GPU required):**
+- All tests run on CPU
+- Toy datasets fit in memory
+- Training completes in seconds
+
+**Optional (for scaling experiments):**
+- GPU for faster training (Weeks 8-9)
+- Multi-GPU for distributed training (Week 9)
+- Cloud compute for capstone projects (Week 16)
+
+## Troubleshooting
+
+### Common Issues
+
+<Accordion title="uv command not found">
+  **Solution:**
+  ```bash
+  # Install uv
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  
+  # Add to PATH (usually automatic, but check)
+  export PATH="$HOME/.cargo/bin:$PATH"
+  ```
+</Accordion>
+
+<Accordion title="Import errors in tests">
+  **Solution:**
+  ```bash
+  # Ensure package is installed in development mode
+  uv sync --extra dev
+  
+  # Or use editable install
+  pip install -e .
+  ```
+</Accordion>
+
+<Accordion title="Type checking errors">
+  **Solution:**
+  ```bash
+  # Check specific file
+  mypy src/problematic_file.py
+  
+  # Common fix: add type hints
+  def func(x: int) -> int:  # Add annotations
+      return x + 1
+  ```
+</Accordion>
+
+<Accordion title="Tests failing in CI but passing locally">
+  **Solution:**
+  ```bash
+  # Reproduce CI environment locally
+  pytest -m "unit or pedagogy or safety" --tb=short
+  
+  # Check for randomness issues
+  # Add seeds to tests:
+  torch.manual_seed(42)
+  ```
+</Accordion>
+
+## Summary
+
+<CardGroup cols={1}>
+  <Card title="Modern Tooling">
+    uv, Ruff, Mypy, pytest - fast, reliable, modern Python stack
+  </Card>
+  <Card title="Fast Feedback">
+    Less than 30s for quality checks. Immediate error detection.
+  </Card>
+  <Card title="Safety by Default">
+    Toy datasets, no accidental large downloads, resource limits enforced
+  </Card>
+  <Card title="Quality Enforced">
+    Multi-layer quality checks: lint, type, test, review
+  </Card>
+  <Card title="Pedagogical Focus">
+    Infrastructure supports learning, not just software engineering
+  </Card>
+</CardGroup>

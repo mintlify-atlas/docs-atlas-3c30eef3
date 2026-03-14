@@ -1,0 +1,214 @@
+---
+title: "Learning References"
+description: "Curated sources forming the curriculum's reference backbone"
+---
+
+## Overview
+
+The AI Researcher curriculum is built on a carefully curated collection of primary sources from leading institutions, research labs, and practitioners. Every reference is verified for relevance and linked to specific curriculum modules.
+
+<Note>
+All sources include a `last_verified_date` and are reviewed before module linkage updates. This ensures the curriculum remains current with the latest research and best practices.
+</Note>
+
+## Using References Effectively
+
+**Before each week:**
+- Review linked sources for that module
+- Start with foundational papers, then explore courses and tutorials
+- Use blog posts for visual explanations and intuition
+
+**During implementation:**
+- Reference framework documentation for API details
+- Compare your implementation against reference repositories
+- Cross-reference multiple sources for deeper understanding
+
+**After completion:**
+- Explore research lab indices for cutting-edge developments
+- Read follow-up papers cited in foundational work
+
+## Source Categories
+
+### Stanford Courses
+
+World-class courses forming the theoretical foundation:
+
+<CardGroup cols={2}>
+  <Card title="CS336: Language Modeling" href="https://cs336.stanford.edu/">
+    Language modeling from scratch. Core reference for weeks 3, 5.
+  </Card>
+  <Card title="CS224N: NLP" href="https://web.stanford.edu/class/cs224n/">
+    Natural language processing fundamentals. Weeks 3, 10.
+  </Card>
+  <Card title="CS25: Transformers United" href="https://web.stanford.edu/class/cs25/">
+    Deep dive into transformer architectures. Weeks 4, 5.
+  </Card>
+</CardGroup>
+
+### Foundational Papers
+
+Seminal research that shaped the field:
+
+<Accordion title="Attention Is All You Need (2017)">
+  **Citation:** Vaswani et al., 2017
+  
+  **URL:** https://arxiv.org/abs/1706.03762
+  
+  **Relevance:** The paper that introduced transformers. Essential reading for weeks 4 (attention mechanics) and 5 (transformer architecture).
+  
+  **Key Contributions:**
+  - Multi-head self-attention mechanism
+  - Positional encodings
+  - Architecture that enabled parallelization
+</Accordion>
+
+<Accordion title="Language Models are Few-Shot Learners (GPT-3, 2020)">
+  **Citation:** Brown et al., 2020
+  
+  **URL:** https://arxiv.org/abs/2005.14165
+  
+  **Relevance:** Demonstrated scaling laws and few-shot learning. Core for weeks 8 (scaling laws) and 10 (evaluation).
+  
+  **Key Contributions:**
+  - Few-shot learning without fine-tuning
+  - Scaling behavior analysis
+  - Benchmark performance across tasks
+</Accordion>
+
+<Accordion title="Training Compute-Optimal LLMs (Chinchilla, 2022)">
+  **Citation:** Hoffmann et al., 2022
+  
+  **URL:** https://arxiv.org/abs/2203.15556
+  
+  **Relevance:** Chinchilla scaling laws for compute-optimal training. Essential for week 8.
+  
+  **Key Contributions:**
+  - Optimal model size vs. training tokens
+  - Compute budget allocation
+  - Redefining scaling best practices
+</Accordion>
+
+### Framework Documentation
+
+Official documentation for implementation:
+
+<CardGroup cols={3}>
+  <Card title="PyTorch Transformer" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Transformer.html">
+    Official transformer implementation reference.
+  </Card>
+  <Card title="TensorFlow Tutorial" href="https://www.tensorflow.org/text/tutorials/transformer">
+    Step-by-step transformer building guide.
+  </Card>
+  <Card title="JAX Scaling Book" href="https://jax-ml.github.io/scaling-book/">
+    Distributed training and scaling patterns.
+  </Card>
+</CardGroup>
+
+### Research Lab Indices
+
+Cutting-edge research from leading organizations:
+
+<CardGroup cols={2}>
+  <Card title="Anthropic Research" href="https://www.anthropic.com/research">
+    Alignment, safety, and interpretability. Weeks 11, 12.
+  </Card>
+  <Card title="Google DeepMind" href="https://deepmind.google/research/">
+    Evaluation benchmarks and multimodal research. Weeks 10, 15.
+  </Card>
+  <Card title="OpenAI Research" href="https://openai.com/research/">
+    Alignment and frontier research. Weeks 11, 16.
+  </Card>
+  <Card title="Meta AI Blog" href="https://ai.meta.com/blog/">
+    Vision transformers and multimodal work. Weeks 13, 15.
+  </Card>
+</CardGroup>
+
+### Community Resources
+
+<CardGroup cols={2}>
+  <Card title="karpathy/nanoGPT" href="https://github.com/karpathy/nanoGPT">
+    Clean, educational GPT implementation. Weeks 6, 8.
+  </Card>
+  <Card title="Hugging Face LLM Course" href="https://huggingface.co/learn/llm-course/chapter1/1">
+    Practical LLM development. Weeks 3, 10.
+  </Card>
+</CardGroup>
+
+### Explainer Blogs
+
+High-quality visual explanations and deep dives:
+
+<Accordion title="Jay Alammar's Blog">
+  **URL:** https://jalammar.github.io/
+  
+  **Focus:** Visual explanations of transformers and attention
+  
+  **Recommended Posts:**
+  - "The Illustrated Transformer"
+  - "The Illustrated GPT-2"
+  
+  **Use for:** Weeks 4, 5 - building intuition before implementation
+</Accordion>
+
+<Accordion title="Lilian Weng's Blog">
+  **URL:** https://lilianweng.github.io/
+  
+  **Focus:** In-depth research summaries and explainers
+  
+  **Recommended Topics:**
+  - Scaling laws and training dynamics
+  - Alignment and safety techniques
+  
+  **Use for:** Weeks 8, 11 - comprehensive overviews
+</Accordion>
+
+<Accordion title="Transformer Circuits">
+  **URL:** https://transformer-circuits.pub/
+  
+  **Focus:** Mechanistic interpretability research
+  
+  **Recommended Articles:**
+  - "A Mathematical Framework for Transformer Circuits"
+  - "In-context Learning and Induction Heads"
+  
+  **Use for:** Week 12 - understanding internal mechanisms
+</Accordion>
+
+## Week-to-Source Alignment
+
+### Early Foundations (Weeks 3-5)
+- **Week 3 (Tokenization, Embeddings):** CS336, CS224N, Hugging Face Course
+- **Week 4 (Attention Mechanics):** Attention paper, CS25, Jay Alammar blog
+- **Week 5 (Transformer Architecture):** CS336, CS25, PyTorch/TensorFlow docs
+
+### Training and Scaling (Weeks 6-9)
+- **Week 6 (Training Loops):** nanoGPT, PyTorch docs
+- **Week 8 (Scaling Laws):** GPT-3 paper, Chinchilla paper, Lilian Weng blog
+- **Week 9 (Distributed Training):** JAX Scaling Book
+
+### Advanced Topics (Weeks 10-16)
+- **Week 10 (Evaluation):** CS224N, GPT-3 paper, DeepMind research
+- **Week 11 (Alignment/Safety):** Anthropic, OpenAI, Lilian Weng blog
+- **Week 12 (Interpretability):** Transformer Circuits, Anthropic research
+- **Week 13 (Vision Transformers):** Meta AI blog
+- **Week 15 (Multimodal):** DeepMind, Meta AI, TensorFlow tutorials
+- **Week 16 (Research Capstone):** OpenAI research
+
+## Verification and Updates
+
+<Note>
+Generate an alignment audit report:
+
+```bash
+uv run --extra dev python tools/validate_reference_alignment.py --strict
+```
+
+View the latest report at `references/reference_alignment_report.md`
+</Note>
+
+## Attribution Policy
+
+All sources are used under MIT with source attribution policy. When using curriculum materials:
+- Cite original papers and courses
+- Link to source repositories
+- Maintain attribution in derived work

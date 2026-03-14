@@ -1,0 +1,161 @@
+---
+title: 'Training Overview'
+description: 'Safety-first PyTorch training system for next-token prediction demos'
+---
+
+## Introduction
+
+The Training module provides a **toy-safe** PyTorch training system designed for educational next-token prediction demos. The system prioritizes safety and reproducibility over performance, making it ideal for learning and experimentation.
+
+## Safety-First Design Philosophy
+
+The training system implements multiple safety guards to prevent accidental resource consumption:
+
+### Hard Safety Limits
+
+- **MAX_SAFE_TRAINING_STEPS**: Hard limit of 200 steps
+- **Toy default**: 50 steps (suitable for quick experiments)
+- **Full training gate**: Steps above 50 require explicit opt-in
+
+### Multi-Layer Protection
+
+```python
+from ai_researcher_repo.training.pytorch_trainer import MAX_SAFE_TRAINING_STEPS
+
+print(f"Maximum allowed steps: {MAX_SAFE_TRAINING_STEPS}")  # 200
+```
+
+The system validates:
+1. **Hard limit check**: `max_steps <= MAX_SAFE_TRAINING_STEPS`
+2. **Opt-in check**: Steps > 50 require `enable_full_training=true`
+3. **Configuration validation**: Runs before any GPU/CPU allocation
+
+## Toy Defaults Explanation
+
+All defaults are intentionally set for **fast iteration** and **minimal resource usage**:
+
+| Parameter | Default | Purpose |
+|-----------|---------|----------|
+| `max_steps` | 50 | Quick demos without accidental long runs |
+| `batch_size` | 8 | Small memory footprint |
+| `learning_rate` | 3e-4 | Conservative Adam default |
+| `enable_full_training` | false | Explicit opt-in required |
+
+This configuration allows:
+- **Sub-second training** on CPU for tiny models
+- **Predictable resource usage** in CI/CD pipelines
+- **Safe exploration** without GPU quota concerns
+
+## How to Opt-In for Full Training
+
+To run training beyond toy defaults:
+
+### Option 1: YAML Configuration
+
+```yaml
+train:
+  max_steps: 100
+  enable_full_training: true  # Required for steps > 50
+  batch_size: 16
+  learning_rate: 1e-3
+```
+
+### Option 2: Programmatic Configuration
+
+```python
+from ai_researcher_repo.configs import RepositoryConfig, TrainConfig
+from ai_researcher_repo.training.pytorch_trainer import train_toy_language_model
+
+config = RepositoryConfig(
+    train=TrainConfig(
+        max_steps=100,
+        enable_full_training=True,  # Explicit opt-in
+        batch_size=16,
+        learning_rate=1e-3,
+    )
+)
+
+result = train_toy_language_model(config)
+print(f"Completed {result.steps_completed} steps with final loss {result.final_loss:.4f}")
+```
+
+### Safety Validation Errors
+
+<Warning>
+  Attempting to exceed limits triggers clear validation errors **before** any training begins.
+</Warning>
+
+**Error 1**: Exceeding hard limit
+```python
+# max_steps = 250 would raise:
+# ValueError: Configured max_steps exceeds local safety limit.
+```
+
+**Error 2**: Missing opt-in flag
+```python
+# max_steps = 75, enable_full_training = false would raise:
+# ValueError: max_steps above 50 requires explicit enable_full_training=true
+```
+
+## Architecture
+
+The training system integrates with:
+
+- **[Configuration System](/api/configs)**: Type-safe `TrainConfig`
+- **[Data Module](/api/data/synthetic-text)**: Synthetic corpus generation
+- **[Models Module](/api/models/overview)**: Tiny Transformer architecture
+- **[Utils Module](/api/utils/seeding)**: Reproducible seeding
+
+## Core Functions
+
+<CardGroup cols={2}>
+  <Card title="train_toy_language_model" href="/api/training/pytorch-trainer#train_toy_language_model">
+    Main training loop with safety validation
+  </Card>
+  
+  <Card title="validate_training_limits" href="/api/training/pytorch-trainer#validate_training_limits">
+    Pre-training safety checks
+  </Card>
+</CardGroup>
+
+## TrainingSummary Return Type
+
+All training functions return a lightweight summary:
+
+```python
+@dataclass(frozen=True)
+class TrainingSummary:
+    steps_completed: int
+    final_loss: float
+```
+
+**Fields**:
+- `steps_completed`: Actual number of optimization steps run
+- `final_loss`: Cross-entropy loss from the final batch
+
+## Quick Start
+
+```python
+from ai_researcher_repo.configs import RepositoryConfig
+from ai_researcher_repo.training.pytorch_trainer import train_toy_language_model
+
+# Use all defaults (50 steps, batch_size=8)
+config = RepositoryConfig()
+result = train_toy_language_model(config)
+
+print(f"Training complete!")
+print(f"Steps: {result.steps_completed}")
+print(f"Final loss: {result.final_loss:.4f}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="PyTorch Trainer API" href="/api/training/pytorch-trainer">
+    Complete API reference for training functions
+  </Card>
+  
+  <Card title="Configuration Reference" href="/api/configs">
+    All TrainConfig parameters
+  </Card>
+</CardGroup>

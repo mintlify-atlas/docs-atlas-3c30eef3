@@ -1,0 +1,224 @@
+---
+title: Vision Transformers
+description: Master patch tokenization, ViT architectures, and vision task evaluation
+---
+
+# Realm: Vision Transformers
+
+Understand patch tokenization, ViT blocks, and evaluation tradeoffs for vision tasks. Learn to apply transformer architectures to image data and achieve competitive performance on visual recognition tasks.
+
+## Core Goal
+
+Master the application of transformer architectures to computer vision. You'll learn patch-based tokenization, positional encoding for spatial data, and architectural adaptations for vision tasks.
+
+## Prerequisites
+
+Before starting this realm, complete:
+
+- **Weeks 1-8**: Foundational material through transformer architecture
+- **Week 13**: Computer Vision Transformers (provides direct context)
+- **Week 10**: Evaluation and Benchmarks
+
+Recommended: Basic familiarity with convolutional networks for comparison.
+
+## Reference Materials
+
+<CardGroup cols={2}>
+  <Card title="ViT Paper" href="https://arxiv.org/abs/2010.11929">
+    An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale
+  </Card>
+  
+  <Card title="Meta AI Blog" href="https://ai.meta.com/blog/">
+    Latest vision research and techniques
+  </Card>
+  
+  <Card title="PyTorch Transformer Docs" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Transformer.html">
+    Official transformer implementation
+  </Card>
+  
+  <Card title="Stanford CS25" href="https://web.stanford.edu/class/cs25/">
+    Transformers United course
+  </Card>
+</CardGroup>
+
+## Project Ladder
+
+Progress through three tiers of increasing complexity:
+
+### Short Project (1-2 days)
+
+**Goal**: Patchify toy images and run a tiny ViT forward pass
+
+<Steps>
+  <Step title="Implement Patch Embedding">
+    Convert images to patches and flatten. Verify shapes with toy 32x32 images.
+  </Step>
+  
+  <Step title="Add Positional Encoding">
+    Implement 2D positional encodings. Test with visualization.
+  </Step>
+  
+  <Step title="Build Tiny ViT">
+    Create 2-layer transformer encoder with patch embeddings and class token.
+  </Step>
+  
+  <Step title="Test Forward Pass">
+    Run inference on batch of toy images. Verify output shapes.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Patchification module with tests
+- Position embedding implementation
+- Minimal ViT architecture
+- Shape verification notebook
+
+### Medium Project (3-7 days)
+
+**Goal**: Train a small classifier with augmentation + regularization
+
+<Steps>
+  <Step title="Prepare Dataset">
+    Use CIFAR-10 or similar small dataset. Implement train/val/test splits.
+  </Step>
+  
+  <Step title="Add Data Augmentation">
+    Implement random crops, flips, color jitter. Compare augmented vs. non-augmented.
+  </Step>
+  
+  <Step title="Implement Regularization">
+    Add dropout, weight decay, and label smoothing. Track overfitting metrics.
+  </Step>
+  
+  <Step title="Train to Convergence">
+    Use learning rate warmup and cosine decay. Track accuracy, loss, and confusion matrix.
+  </Step>
+  
+  <Step title="Analyze Performance">
+    Compute precision, recall, F1 per class. Visualize failure cases.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Training pipeline with augmentation
+- Regularization ablation study
+- Per-class performance metrics
+- Failure case analysis
+
+### Deep Project (1-2 weeks)
+
+**Goal**: Compare ViT vs convolutional baseline under equal parameter budget
+
+<Steps>
+  <Step title="Design Fair Comparison">
+    Match parameter counts between ViT and ResNet/ConvNet. Document architecture choices.
+  </Step>
+  
+  <Step title="Control Training Conditions">
+    Use same optimizer, learning rate schedule, regularization, and data augmentation for both.
+  </Step>
+  
+  <Step title="Run Multiple Seeds">
+    Train each architecture 3-5 times with different random seeds. Track full metrics.
+  </Step>
+  
+  <Step title="Analyze Results">
+    Compare accuracy, throughput, memory, and convergence speed. Plot learning curves.
+  </Step>
+  
+  <Step title="Document Tradeoffs">
+    Write technical report covering when to use ViT vs. CNNs, including data efficiency analysis.
+  </Step>
+</Steps>
+
+**Deliverables**:
+- Fair architecture comparison
+- Multi-seed results with statistics
+- Throughput and efficiency benchmarks
+- Technical report with recommendations
+
+## Acceptance Criteria
+
+Your work meets professional standards if:
+
+<AccordionGroup>
+  <Accordion title="Patch/Token Pipeline Explained and Validated">
+    - Patchification process is clearly documented
+    - Position encoding strategy is justified
+    - Shape transformations are verified with tests
+    - Edge cases (non-square images, varying sizes) are handled
+  </Accordion>
+  
+  <Accordion title="Metrics Include Precision/Recall/F1 and Confusion Breakdown">
+    - All metrics computed per-class and macro-averaged
+    - Confusion matrix visualized and analyzed
+    - Class imbalance addressed if present
+    - Statistical significance tested across seeds
+  </Accordion>
+  
+  <Accordion title="Reproducible Comparison Protocol">
+    - Both models use identical training conditions
+    - Parameter counts verified and reported
+    - All hyperparameters logged
+    - Code includes instructions for replication
+  </Accordion>
+</AccordionGroup>
+
+## Key Concepts to Master
+
+- **Patch Tokenization**: Patch size selection, overlapping vs. non-overlapping, adaptive patching
+- **Position Encoding**: 1D vs. 2D encodings, learned vs. fixed, interpolation for different resolutions
+- **ViT Architecture**: Class token, encoder-only design, MLP head, attention pooling
+- **Training Strategies**: Longer training vs. CNNs, importance of regularization, data augmentation
+- **Scaling**: How performance improves with data size, pre-training strategies
+
+## Common Pitfalls
+
+<Warning>
+**Avoid these mistakes:**
+
+- Using too large patches (loses spatial detail)
+- Insufficient regularization (ViTs need more than CNNs)
+- Training without warmup (unstable early training)
+- Comparing to CNN with different preprocessing
+- Ignoring throughput and memory costs
+</Warning>
+
+## Implementation Tips
+
+<Accordion title="Patch Size Selection">
+Start with 16x16 patches for 224x224 images. Smaller patches increase computation but capture finer details. Larger patches are faster but lose spatial resolution. Test 8x8, 16x16, and 32x32 on your data.
+</Accordion>
+
+<Accordion title="Position Encoding">
+Learned 2D position embeddings work well for fixed resolutions. For variable sizes, use interpolation or relative position encodings. Test both approaches.
+</Accordion>
+
+<Accordion title="Regularization">
+ViTs benefit from stronger regularization than CNNs. Use dropout (0.1-0.2), stochastic depth, and augmentation. Label smoothing (0.1) also helps.
+</Accordion>
+
+## Integration with Other Realms
+
+Vision Transformers knowledge enables:
+
+- **Multimodal Alignment**: Vision encoder for CLIP-style models
+- **Interpretability**: Attention map visualization for vision
+- **ML Systems & Scaling**: Efficient training for large vision models
+- **LLM Systems**: Shared transformer architecture patterns
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Start Short Project" href="/quickstart">
+    Begin patchification implementation
+  </Card>
+  
+  <Card title="Review Week 13" href="/weeks/week13-computer-vision-transformers">
+    Refresh ViT concepts
+  </Card>
+  
+  <Card title="Read ViT Paper" href="https://arxiv.org/abs/2010.11929">
+    Study original architecture
+  </Card>
+</CardGroup>

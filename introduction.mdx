@@ -1,0 +1,152 @@
+---
+title: Introduction
+description: Master AI engineering from foundational mathematics to research-grade implementations in 16 weeks
+---
+
+# AI Researcher Zero-to-SOTA
+
+A comprehensive, curriculum-first learning path for going from basic coding familiarity to research-grade AI engineering across language models, computer vision, reinforcement learning, multimodal systems, alignment, interpretability, and ML systems.
+
+## What This Curriculum Offers
+
+This repository provides a structured 16-week journey designed to transform beginners into capable AI researchers and engineers. Each week builds on the previous, starting from zero assumptions and progressing to state-of-the-art techniques.
+
+<CardGroup cols={2}>
+  <Card title="16-Week Curriculum" href="/curriculum/overview">
+    Structured learning path from basics to research-grade AI
+  </Card>
+  <Card title="Weekly Challenges" href="/quickstart">
+    Hands-on coding problems with tests and reference solutions
+  </Card>
+  <Card title="Realm Deep-Dives" href="/realms/overview">
+    Specialized tracks for LLMs, vision, RL, and more
+  </Card>
+  <Card title="CLI Tools" href="/api/cli/overview">
+    Run experiments, tests, and quality checks
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Zero-Assumption Math Walkthroughs">
+    Every mathematical formula includes plain-language intuition, symbol glossaries, step-by-step derivations, visualizations, and toy numeric walkthroughs. No prior knowledge assumed.
+  </Accordion>
+  
+  <Accordion title="Coding-First Learning">
+    Each week includes challenge problems, starter code, reference solutions, and comprehensive tests. Learn by implementing, not just reading.
+  </Accordion>
+  
+  <Accordion title="Multi-Framework Support">
+    Implement models in PyTorch, JAX, and TensorFlow. Understand the strengths and trade-offs of each framework.
+  </Accordion>
+  
+  <Accordion title="Reference-Backed Content">
+    All material is tied to Stanford courses, seminal papers, lab research pages, and framework documentation. Learn from authoritative sources.
+  </Accordion>
+  
+  <Accordion title="Toy-Safe Defaults">
+    No hidden long training runs. All defaults are small-scale and local-first, with explicit opt-in for larger experiments.
+  </Accordion>
+</AccordionGroup>
+
+## Who This Is For
+
+This curriculum is ideal if you:
+
+- Know basic Python and terminal usage but want deep AI/ML mastery
+- Want practical implementation depth, not only conceptual reading
+- Seek one comprehensive place to learn, code, test, and track progress toward research roles
+- Prefer structured, guided learning with clear milestones and assessments
+
+## Learning Paths
+
+<Tabs>
+  <Tab title="Core Path">
+    Follow weeks 1-12 for foundational understanding of machine learning, neural networks, transformers, training techniques, and evaluation methods. This path covers:
+    
+    - Mathematical foundations (optimization, linear algebra, probability)
+    - Tokenization, embeddings, and positional encoding
+    - Attention mechanisms and transformer architecture
+    - Training loops, regularization, and scaling laws
+    - Distributed training and evaluation benchmarks
+    - Alignment, safety, and interpretability
+  </Tab>
+  
+  <Tab title="Realm Mode">
+    After completing core weeks, dive deep into specialized domains:
+    
+    - **LLM Systems**: Fine-tuning, prompt engineering, inference optimization
+    - **Vision Transformers**: Image classification, object detection, segmentation
+    - **RL Sequence Models**: Policy gradients, PPO, decision transformers
+    - **Multimodal Alignment**: Vision-language models, cross-modal learning
+    - **Alignment & Safety**: RLHF, constitutional AI, safety evaluation
+    - **Interpretability**: Mechanistic interpretability, feature visualization
+    - **ML Systems & Scaling**: Distributed training, model parallelism, infrastructure
+  </Tab>
+  
+  <Tab title="Research Mode">
+    Week 16 and beyond: reproduce seminal papers, run capstone projects, and compare design choices. Build a portfolio of research implementations.
+  </Tab>
+</Tabs>
+
+## Repository Structure
+
+```
+curriculum/          # 16-week flagship curriculum
+├── weeks/          # Per-week modules with math, code, and challenges
+└── realms/         # Deep-dive guides for specialized tracks
+
+src/ai_researcher_repo/  # Reusable core code and CLI
+├── models/         # Transformer implementations (PyTorch, JAX, TensorFlow)
+├── training/       # Training loops and optimization
+├── evaluation/     # Metrics and benchmarking
+└── cli.py          # Command-line interface
+
+tests/              # Unit, integration, pedagogy, and safety tests
+configs/            # Toy-safe defaults and opt-in configurations
+references/         # Source canon, datasets, papers, alignment reports
+tools/              # Quality checks and curriculum validation
+```
+
+## Quick Links
+
+<CardGroup cols={3}>
+  <Card title="Get Started" href="/quickstart">
+    Install and run your first module
+  </Card>
+  <Card title="Week 1" href="/weeks/week01-math-optimization-autograd">
+    Begin the curriculum
+  </Card>
+  <Card title="CLI Reference" href="/api/cli/commands">
+    Command-line tools
+  </Card>
+</CardGroup>
+
+## Philosophy
+
+This repository prioritizes:
+
+- **Readability and maintainability** over defensive complexity
+- **Clear code** with explicit naming and single-purpose functions
+- **Functional programming** with pure functions and immutable data flow
+- **Comprehensive testing** with unit, integration, and pedagogy checks
+- **Safety defaults** with no hidden expensive operations
+
+Every line of code is designed to be educational, production-quality, and easy to understand.
+
+## Next Steps
+
+<Steps>
+  <Step title="Set Up Your Environment">
+    Follow the [setup guide](/setup) to install dependencies and configure your development environment.
+  </Step>
+  
+  <Step title="Run the Quickstart">
+    Complete the [quickstart tutorial](/quickstart) to verify your installation and run your first experiment.
+  </Step>
+  
+  <Step title="Start Week 1">
+    Begin the [curriculum](/curriculum/overview) with Week 1: Math, Optimization, and Autograd.
+  </Step>
+</Steps>

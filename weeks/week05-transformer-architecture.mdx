@@ -1,0 +1,181 @@
+---
+title: "Week 05: Transformer Block Architecture"
+description: "Trace residual pathways, normalization, and feed-forward composition in a full block"
+---
+
+## Module Focus
+
+Trace residual pathways, normalization, and feed-forward composition in a full transformer block.
+
+## Learning Outcomes
+
+<Steps>
+  <Step title="Explain and derive the core formula">
+    Understand `LayerNorm(x) = (x - mean(x)) / sqrt(var(x) + epsilon)` in plain language.
+  </Step>
+  <Step title="Translate formula to code">
+    Convert residual connections and layer normalization to Python.
+  </Step>
+  <Step title="Solve the coding challenge">
+    Implement residual + LayerNorm in 40-60 minutes.
+  </Step>
+</Steps>
+
+## Core Formula
+
+```
+LayerNorm(x) = (x - mean(x)) / sqrt(var(x) + epsilon)
+```
+
+## Mathematical Intuition
+
+Residual paths preserve information while normalization stabilizes scale across layers.
+
+<Accordion title="Symbol Glossary">
+  - **x**: residual stream input vector
+  - **mean(x)**: average activation value
+  - **var(x)**: activation variance
+  - **epsilon**: numerical stability constant (prevents division by zero)
+</Accordion>
+
+## Derivation Steps
+
+<Steps>
+  <Step title="Add residual">
+    Combine residual and transformed vectors element-wise.
+  </Step>
+  <Step title="Compute statistics">
+    Calculate mean and variance of the combined vector.
+  </Step>
+  <Step title="Normalize">
+    Center and scale each component using mean and variance.
+  </Step>
+</Steps>
+
+## Why Residual Connections?
+
+Residual connections (skip connections) allow gradients to flow directly through the network, preventing vanishing gradients in deep models. Each layer adds a transformation to the residual stream rather than replacing it.
+
+## Toy Example Walkthrough
+
+1. Residual vector after skip-connection: `[1.5, 1.5, 4.0]`
+2. Mean is `2.333...` and variance is `1.388...`
+3. Normalized output is centered at zero
+
+### Implementation
+
+```python
+from __future__ import annotations
+import math
+
+def run_toy_example() -> dict[str, float]:
+    input_vector = [1.0, 2.0, 3.0]
+    transformed_vector = [0.5, -0.5, 1.0]
+    residual_vector = [
+        input_value + transformed_value
+        for input_value, transformed_value in zip(input_vector, transformed_vector)
+    ]
+    mean_value = sum(residual_vector) / len(residual_vector)
+    variance_value = sum((value - mean_value) ** 2 for value in residual_vector) / len(residual_vector)
+    normalized_vector = [
+        (value - mean_value) / math.sqrt(variance_value + 1e-6) for value in residual_vector
+    ]
+    return {
+        "primary_metric": normalized_vector[0],
+        "secondary_metric": sum(normalized_vector),
+    }
+```
+
+## Coding Challenge
+
+<Card title="Residual + LayerNorm Function">
+  **Goal**: Implement a residual addition followed by layer normalization.
+  
+  **Time**: 40-60 minutes
+  
+  **Requirements**:
+  - Add input and transformed vectors element-wise
+  - Compute mean and variance of result
+  - Normalize using the LayerNorm formula
+  - Use epsilon for numerical stability (default 1e-6)
+</Card>
+
+<Accordion title="Reference Solution">
+```python
+from __future__ import annotations
+import math
+
+def apply_residual_layer_normalization(
+    input_vector: list[float],
+    transformed_vector: list[float],
+    epsilon: float = 1e-6,
+) -> list[float]:
+    residual_vector = [
+        input_value + transformed_value
+        for input_value, transformed_value in zip(input_vector, transformed_vector)
+    ]
+    mean_value = sum(residual_vector) / len(residual_vector)
+    variance_value = sum((value - mean_value) ** 2 for value in residual_vector) / len(residual_vector)
+    denominator = math.sqrt(variance_value + epsilon)
+    return [(value - mean_value) / denominator for value in residual_vector]
+```
+</Accordion>
+
+## Formula to Code Mapping
+
+- Residual addition maps to pairwise vector sums
+- Normalization maps to subtract-mean and divide-by-standard-deviation
+- Epsilon prevents numerical issues when variance is near zero
+
+## Transformer Block Components
+
+A full transformer block typically contains:
+
+1. **Multi-head attention** - parallel attention mechanisms
+2. **Residual connection** - add attention output to input
+3. **Layer normalization** - stabilize activations
+4. **Feed-forward network** - position-wise MLP
+5. **Another residual + LayerNorm** - after the FFN
+
+## Reference Materials
+
+<CardGroup cols={3}>
+  <Card title="Stanford CS336" href="https://cs336.stanford.edu/">
+    Language Modeling from Scratch
+  </Card>
+  <Card title="Attention Is All You Need" href="https://arxiv.org/abs/1706.03762">
+    Original Transformer Paper
+  </Card>
+  <Card title="PyTorch Docs" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Transformer.html">
+    Transformer Implementation
+  </Card>
+</CardGroup>
+
+<CardGroup cols={2}>
+  <Card title="TensorFlow Tutorial" href="https://www.tensorflow.org/text/tutorials/transformer">
+    Transformer Tutorial
+  </Card>
+  <Card title="Jay Alammar Blog" href="https://jalammar.github.io/">
+    Visual Transformer Guides
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Read math_walkthrough.md">
+    Reproduce derivation steps on paper
+  </Step>
+  <Step title="Run toy_example.py">
+    Verify normalized outputs are centered at zero
+  </Step>
+  <Step title="Implement problem.py">
+    Build residual + LayerNorm from scratch
+  </Step>
+  <Step title="Validate with tests">
+    Unskip exercise tests and run pytest
+  </Step>
+  <Step title="Compare and reflect">
+    Review the reference solution and write a short reflection
+  </Step>
+</Steps>

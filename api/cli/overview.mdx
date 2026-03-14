@@ -1,0 +1,97 @@
+---
+title: 'CLI Tools Overview'
+description: 'Command-line interface for AI Researcher Zero-to-SOTA curriculum utilities'
+icon: 'terminal'
+---
+
+## Introduction
+
+The `ai-researcher` CLI provides command-line tools for managing curriculum utilities, running experiments, and performing quality checks. The CLI is designed for toy-safe experimentation and educational purposes.
+
+## Installation
+
+The CLI is available after installing the `ai-researcher-repo` package:
+
+```bash
+pip install -e .
+```
+
+Once installed, you can access the CLI using:
+
+```bash
+ai-researcher --help
+```
+
+## Quick Start
+
+```bash
+# Prepare data for experiments
+ai-researcher prepare-data
+
+# Train a toy language model
+ai-researcher train-toy
+
+# Evaluate model performance
+ai-researcher eval
+
+# Run quality checks
+ai-researcher run-checks
+```
+
+## Available Commands
+
+<CardGroup cols={2}>
+  <Card title="prepare-data" href="/api/cli/commands#prepare-data">
+    Prepare datasets and generate data preparation notes
+  </Card>
+  
+  <Card title="train-toy" href="/api/cli/commands#train-toy">
+    Train a toy language model with configurable parameters
+  </Card>
+  
+  <Card title="eval" href="/api/cli/commands#eval">
+    Evaluate model performance with metrics like perplexity
+  </Card>
+  
+  <Card title="export-diagrams" href="/api/cli/commands#export-diagrams">
+    Export curriculum diagrams to a manifest file
+  </Card>
+  
+  <Card title="run-checks" href="/api/cli/commands#run-checks">
+    Run linting, type checking, and tests
+  </Card>
+  
+  <Card title="run-module-tests" href="/api/cli/commands#run-module-tests">
+    Run tests for a specific curriculum week module
+  </Card>
+</CardGroup>
+
+## Command Structure
+
+All commands follow the pattern:
+
+```bash
+ai-researcher <command> [options]
+```
+
+## Exit Codes
+
+The CLI uses standard exit codes:
+- `0`: Success
+- Non-zero: Error (specific code depends on the failure)
+
+## Configuration
+
+Some commands accept a `--config` parameter to specify custom repository configuration. If not provided, default configuration is used.
+
+## Next Steps
+
+<CardGroup cols={1}>
+  <Card title="Command Reference" href="/api/cli/commands">
+    View detailed documentation for each command
+  </Card>
+  
+  <Card title="Configuration" href="/api/configs">
+    Learn about repository configuration options
+  </Card>
+</CardGroup>
